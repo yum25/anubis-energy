@@ -10,6 +10,46 @@ from collections import deque
 from dataclasses import dataclass, field
 from zeus.monitor import PowerMonitor, TemperatureMonitor, ZeusMonitor
 
+# Add this to runtime_profiler.py (replaces the __init__ and _loop when mock=True)
+class MockPowerMonitor:
+    """Simulates GPU power draw without real hardware."""
+    def __init__(self, base_w=200.0, noise=20.0):
+        self.base_w = base_w
+        self.noise  = noise
+
+    def get_all_power_timelines(self, start_time, end_time):
+        rng = np.random.default_rng(int(start_time))
+        n_samples = max(1, int((end_time - start_time) / 0.5))
+        return {
+            "gpu0": [(start_time + i * 0.5,
+                      self.base_w + rng.normal(0, self.noise))
+                     for i in range(n_samples)],
+            "gpu1": [(start_time + i * 0.5,
+                      self.base_w * 0.8 + rng.normal(0, self.noise))
+                     for i in range(n_samples)],
+        }
+
+
+class MockTemperatureMonitor:
+    def get_temperature_timeline(self, start_time, end_time):
+        rng = np.random.default_rng(int(start_time))
+        n_samples = max(1, int((end_time - start_time) / 1.0))
+        return {
+            "gpu0": [(start_time + i, 55.0 + rng.normal(0, 3)) for i in range(n_samples)],
+            "gpu1": [(start_time + i, 52.0 + rng.normal(0, 3)) for i in range(n_samples)],
+        }
+
+
+class MockZeusMonitor:
+    def begin_window(self, *args, **kwargs): pass
+    def end_window(self, name, **kwargs):
+        from dataclasses import dataclass
+        @dataclass
+        class FakeMeasurement:
+            total_energy: float = 500.0
+            time: float = 10.0
+        return FakeMeasurement()
+
 
 @dataclass
 class ProfileSnapshot:
@@ -30,10 +70,16 @@ class RuntimeProfiler:
 
     WINDOW_SIZE = 60  # seconds of history to keep
 
-    def __init__(self, power_interval: float = 0.5, temp_interval: float = 1.0):
-        self._power_monitor = PowerMonitor(update_period=power_interval)
-        self._temp_monitor  = TemperatureMonitor(update_period=temp_interval)
-        self._zeus          = ZeusMonitor()
+    def __init__(self, power_interval: float = 0.5, temp_interval: float = 1.0, mock=False):
+        if mock:
+            self._power_monitor = MockPowerMonitor()
+            self._temp_monitor  = MockTemperatureMonitor()
+            self._zeus          = MockZeusMonitor()
+        else:
+            self._power_monitor = PowerMonitor(update_period=power_interval)
+            self._temp_monitor  = TemperatureMonitor(update_period=temp_interval)
+            self._zeus          = ZeusMonitor()
+
 
         self._snapshots: deque[ProfileSnapshot] = deque()
         self._token_count = 0
