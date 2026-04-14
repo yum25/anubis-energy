@@ -1,4 +1,6 @@
-# LLM Inference Energy — Static vs. Runtime Scheduler Comparison
+# anubis-energy
+
+> Weighing the benefits of static vs runtime profiling in energy/temp optimization for LLM inference
 
 CSE 585 final project. Measures and compares the energy efficiency of two GPU
 serving schedulers for LLM inference on a CloudLab V100S node:
@@ -20,13 +22,13 @@ specific to CC 7.0.
 
 ### Software
 
-| Requirement | Version / note |
-|---|---|
-| Python | 3.10 or 3.11 (3.12 works; 3.13 untested) |
-| CUDA | 11.8 or 12.1 |
-| vLLM | **0.4.3** — newer versions drop CC 7.0 support |
-| Hugging Face token | Required for `meta-llama/Llama-2-7b-hf` |
-| `sudo` access | Required for `nvidia-smi -ac` frequency setting |
+| Requirement        | Version / note                                  |
+| ------------------ | ----------------------------------------------- |
+| Python             | 3.10 or 3.11 (3.12 works; 3.13 untested)        |
+| CUDA               | 11.8 or 12.1                                    |
+| vLLM               | **0.4.3** — newer versions drop CC 7.0 support  |
+| Hugging Face token | Required for `meta-llama/Llama-2-7b-hf`         |
+| `sudo` access      | Required for `nvidia-smi -ac` frequency setting |
 
 ---
 
@@ -77,6 +79,7 @@ python static_profiling/run_static_profiling.py
 ```
 
 The script:
+
 1. Starts a vLLM OpenAI-compatible server for each batch-size group
    (3 server restarts total; frequency changes via `nvidia-smi -ac` need no restart).
 2. Opens a Zeus energy window around the 100 measured requests per config.
@@ -85,6 +88,7 @@ The script:
 Output: `static_profiling/static_profile.json` — 24 records, one per config.
 
 > **Troubleshooting**
+>
 > - If `sudo nvidia-smi -ac` fails, confirm `nvidia-persistenced` is running.
 > - If the vLLM server times out on startup, lower `--gpu-memory-utilization`
 >   in the script from `0.85` to `0.80`.
@@ -105,11 +109,11 @@ python static_profiling/build_static_models.py
 
 Outputs written to `static_profiling/`:
 
-| File | Contents |
-|---|---|
-| `static_temp_model.pkl` | sklearn Pipeline → predicted steady-state GPU temp (°C) |
-| `static_energy_model.pkl` | sklearn Pipeline → predicted steady-state energy (J) |
-| `static_pareto.json` | All 24 configs annotated with goodput and SLO flag |
+| File                      | Contents                                                |
+| ------------------------- | ------------------------------------------------------- |
+| `static_temp_model.pkl`   | sklearn Pipeline → predicted steady-state GPU temp (°C) |
+| `static_energy_model.pkl` | sklearn Pipeline → predicted steady-state energy (J)    |
+| `static_pareto.json`      | All 24 configs annotated with goodput and SLO flag      |
 
 The script prints R² scores for both models and the number of configurations
 within the 8 s P99 E2EL SLO.
@@ -119,9 +123,23 @@ within the 8 s P99 E2EL SLO.
 ## 4 — Simulated experiment
 
 Simulation uses a physics model grounded in the TAPAS thermal equations and
-ML.Energy benchmark figures for the V100S. Both schedulers run on independent
+ML.Energy benchmark figures for the H100 and B200. Both schedulers run on independent
 simulator instances with the same random seed, so results are directly
 comparable without hardware access.
+
+### Generate GPU Model profiles
+
+GPU model profiles are based on benchmarked data from the ML.Energy Benchmark,
+with the exception of V100 which is approximated from baseline data in
+Samsi et al. 2023, arXiv:2310.03003. Keep in mind figures for V100 are less
+accurate and real hardware experiments will produce stronger data.
+
+The simulations use constants based on GPU model profiles. To regenerate these
+profiles in `profiles.py`, run:
+
+```bash
+python scripts/calibrate_profiles.py > profilers/profiles.py
+```
 
 ### Run both schedulers (default)
 
@@ -145,13 +163,13 @@ python experiment.py --mode sim --scheduler runtime --output results/sim_runtime
 
 **Simulated workload scenario** (360 s total, 36 steps at 10 s intervals):
 
-| Sim time | Event |
-|---|---|
-| 0 s | Decode phase, normal load |
-| 60 s | Thermal spike +10 °C injected |
-| 120 s | Phase transitions to prefill |
-| 240 s | Load spike ×1.5 injected for 60 s |
-| 300 s | Load expires; phase returns to decode |
+| Sim time | Event                                 |
+| -------- | ------------------------------------- |
+| 0 s      | Decode phase, normal load             |
+| 60 s     | Thermal spike +10 °C injected         |
+| 120 s    | Phase transitions to prefill          |
+| 240 s    | Load spike ×1.5 injected for 60 s     |
+| 300 s    | Load expires; phase returns to decode |
 
 The thermal and load spikes are no-ops on real hardware (injected into the
 simulator only), giving the runtime scheduler something to react to that the
@@ -244,19 +262,19 @@ Load both JSON files and compare the `summary` fields in each. The full
 
 ## CLI reference — experiment.py
 
-| Flag | Default | Description |
-|---|---|---|
-| `--mode` | `sim` | `sim` = simulator, `real` = Zeus on hardware |
-| `--scheduler` | `both` | `static`, `runtime`, or `both` (`both` is sim-only) |
-| `--duration` | `360` | Experiment length in seconds |
-| `--interval-s` | `10` | Observation interval in seconds |
-| `--static-policy` | `min_energy` | `min_energy`, `max_goodput`, `best_efficiency` |
-| `--thermal-limit` | `80.0` | Static scheduler thermal ceiling (°C) |
-| `--runtime-initial-freq-idx` | `2` | Runtime start freq index: 0=780 1=1000 2=1200 3=1377 MHz |
-| `--gpu-indices` | `0` | GPU device indices (e.g. `--gpu-indices 0 1`) |
-| `--seed` | `42` | Simulator RNG seed (ignored in real mode) |
-| `--output` | `results.json` | Path for the JSON results file |
-| `--verbose` / `-v` | off | Print per-step observations to stdout |
+| Flag                         | Default        | Description                                              |
+| ---------------------------- | -------------- | -------------------------------------------------------- |
+| `--mode`                     | `sim`          | `sim` = simulator, `real` = Zeus on hardware             |
+| `--scheduler`                | `both`         | `static`, `runtime`, or `both` (`both` is sim-only)      |
+| `--duration`                 | `360`          | Experiment length in seconds                             |
+| `--interval-s`               | `10`           | Observation interval in seconds                          |
+| `--static-policy`            | `min_energy`   | `min_energy`, `max_goodput`, `best_efficiency`           |
+| `--thermal-limit`            | `80.0`         | Static scheduler thermal ceiling (°C)                    |
+| `--runtime-initial-freq-idx` | `2`            | Runtime start freq index: 0=780 1=1000 2=1200 3=1377 MHz |
+| `--gpu-indices`              | `0`            | GPU device indices (e.g. `--gpu-indices 0 1`)            |
+| `--seed`                     | `42`           | Simulator RNG seed (ignored in real mode)                |
+| `--output`                   | `results.json` | Path for the JSON results file                           |
+| `--verbose` / `-v`           | off            | Print per-step observations to stdout                    |
 
 ---
 
