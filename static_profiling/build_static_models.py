@@ -11,7 +11,8 @@ REPO_ROOT   = Path(__file__).parent.parent
 PROFILE_IN  = Path(__file__).parent / "static_profile.json"
 MODELS_DIR  = Path(__file__).parent  # save models alongside this script
 
-SLO_P99_MS  = 5000.0  # 5 second P99 E2EL SLO threshold
+SLO_P99_MS  = 8000.0  # 8 s P99 E2EL SLO — V100S has ~⅓ A100 memory bandwidth,
+                      # so decode latency is proportionally higher than A100's 5 s target
 
 with open(PROFILE_IN) as f:
     data = json.load(f)
@@ -20,7 +21,7 @@ print(f"Loaded {len(data)} configurations from {PROFILE_IN}")
 
 # ── Build feature matrix ──────────────────────────────────────────────────────
 # Features:
-#   - gpu_freq_mhz normalized to [0, 1] (max observed is 1410)
+#   - gpu_freq_mhz normalized to [0, 1] (max in sweep is 1377 for V100S)
 #   - max_num_seqs normalized to [0, 1] (max in sweep is 32)
 #   - phase encoded as binary (prefill=1, decode=0)
 # No quantization feature — removed from sweep
@@ -32,7 +33,7 @@ y_goodput  = []  # output_throughput if within SLO, else 0
 
 for r in data:
     X.append([
-        r["gpu_freq_mhz"] / 1410,
+        r["gpu_freq_mhz"] / 1377,
         r["max_num_seqs"] / 32,
         1.0 if r["phase"] == "prefill" else 0.0,
     ])
