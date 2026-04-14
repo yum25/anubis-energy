@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import threading
+from zeus.monitor import ZeusMonitor, PowerMonitor, TemperatureMonitor
 
 from interface import GpuObservation, DataSource
 
@@ -19,8 +20,6 @@ class RealGpuDataSource(DataSource):
     """
 
     def __init__(self, gpu_indices: list[int] = [0, 1]):
-        # Import Zeus here so the rest of the file works without it locally
-        from zeus.monitor import ZeusMonitor, PowerMonitor, TemperatureMonitor
 
         self.gpu_indices = gpu_indices
         self._zeus = ZeusMonitor(gpu_indices=gpu_indices)
