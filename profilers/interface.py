@@ -62,6 +62,13 @@ class DataSource(ABC):
         ...
 
     @abstractmethod
+    def set_workload(self, request_rate: float, phase: str) -> None:
+        """
+        Apply a specific request rate for the workload.
+        This records the request rate of the serving LLM to the profiler.
+        """
+
+    @abstractmethod
     def inject_event(self, event: str, **kwargs) -> None:
         """
         Inject a named disturbance into the data source.

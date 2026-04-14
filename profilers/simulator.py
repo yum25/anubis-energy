@@ -133,6 +133,8 @@ class SimulatedGpuDataSource(DataSource):
       - _active_events: injected disturbances and their remaining duration
     """
 
+    BASE_LOAD_PER_SEQ = 2.5  # % GPU utilisation per concurrent sequence
+
     def __init__(
         self,
         gpu_indices: list[int] = [0, 1],
@@ -153,7 +155,6 @@ class SimulatedGpuDataSource(DataSource):
         self.ENERGY_PER_TOKEN_PREFILL_J = GPU_PROFILES[gpu_model][
             "ENERGY_PER_TOKEN_PREFILL_J"
         ]
-        self.BASE_LOAD_PER_SEQ = GPU_PROFILES[gpu_model]["BASE_LOAD_PER_SEQ"]
         self.MAX_FREQ_MHZ = GPU_PROFILES[gpu_model]["MAX_FREQ_MHZ"]
 
         self._TapasPhysics = _TapasPhysics(gpu_model)

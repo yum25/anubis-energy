@@ -40,13 +40,13 @@ Import note
   Python caches modules by (loader, spec) so there is no double-import of classes
   in practice for the dataclasses we use.
 """
+
 from __future__ import annotations
 
 import argparse
 import dataclasses
 import json
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -60,8 +60,8 @@ if str(_REPO_ROOT / "profilers") not in sys.path:
     sys.path.insert(1, str(_REPO_ROOT / "profilers"))
 
 from profilers.interface import DataSource, GpuObservation  # noqa: E402
-from schedulers.static_scheduler import StaticScheduler      # noqa: E402
-from schedulers.runtime_scheduler import RuntimeScheduler    # noqa: E402
+from schedulers.static_scheduler import StaticScheduler  # noqa: E402
+from schedulers.runtime_scheduler import RuntimeScheduler  # noqa: E402
 
 # ── Experiment scenario ───────────────────────────────────────────────────────
 # A list of (sim_time_s, action, kwargs) triples applied during the run loop.
@@ -74,15 +74,16 @@ from schedulers.runtime_scheduler import RuntimeScheduler    # noqa: E402
 #   t=240  load spike ×1.5 for 60 s (tests efficiency decay)
 #   t=300  load spike expires; back to decode
 SCENARIO: list[tuple[float, str, dict]] = [
-    (  0, "workload", {"request_rate": 2.0, "phase": "decode"}),
-    ( 60, "event",    {"event": "thermal_spike", "delta_c": 10.0}),
+    (0, "workload", {"request_rate": 2.0, "phase": "decode"}),
+    (60, "event", {"event": "thermal_spike", "delta_c": 10.0}),
     (120, "workload", {"request_rate": 2.0, "phase": "prefill"}),
-    (240, "event",    {"event": "load_spike", "duration_s": 60.0, "multiplier": 1.5}),
+    (240, "event", {"event": "load_spike", "duration_s": 60.0, "multiplier": 1.5}),
     (300, "workload", {"request_rate": 2.0, "phase": "decode"}),
 ]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _obs_to_dict(obs: GpuObservation) -> dict:
     return dataclasses.asdict(obs)
@@ -92,6 +93,7 @@ def _build_source(args: argparse.Namespace) -> DataSource:
     """Construct the appropriate DataSource for the requested mode."""
     if args.mode == "sim":
         from profilers.simulator import SimulatedGpuDataSource
+
         return SimulatedGpuDataSource(
             gpu_indices=args.gpu_indices,
             t_outside_c=22.0,
@@ -100,6 +102,7 @@ def _build_source(args: argparse.Namespace) -> DataSource:
         )
     else:
         from profilers.observer import RealGpuDataSource
+
         return RealGpuDataSource(gpu_indices=args.gpu_indices)
 
 
@@ -113,7 +116,7 @@ def _apply_scenario_events(
     Called after each step so the event is applied before the next observation.
     """
     window_start = elapsed - interval_s
-    for (t, action, kwargs) in SCENARIO:
+    for t, action, kwargs in SCENARIO:
         if window_start < t <= elapsed:
             if action == "workload":
                 if hasattr(source, "set_workload"):
@@ -130,27 +133,21 @@ def _compute_summary(
     if not observations:
         return {}
 
-    total_energy_j = sum(
-        sum(obs.gpu_energy_j.values()) for obs in observations
-    )
+    total_energy_j = sum(sum(obs.gpu_energy_j.values()) for obs in observations)
     total_tokens = sum(obs.tokens_generated for obs in observations)
     epts = [obs.energy_per_token_j for obs in observations if obs.energy_per_token_j]
-    all_temps = [
-        t
-        for obs in observations
-        for t in obs.gpu_temp_c.values()
-    ]
+    all_temps = [t for obs in observations for t in obs.gpu_temp_c.values()]
     throttle_steps = sum(1 for obs in observations if obs.throttled)
 
     return {
-        "total_energy_j":           round(total_energy_j, 3),
-        "total_tokens":             total_tokens,
-        "mean_energy_per_token_j":  round(sum(epts) / len(epts), 6) if epts else None,
-        "mean_tokens_per_s":        round(total_tokens / (len(observations) * interval_s), 2),
-        "mean_temp_c":              round(sum(all_temps) / len(all_temps), 2) if all_temps else None,
-        "max_temp_c":               round(max(all_temps), 2) if all_temps else None,
-        "throttle_steps":           throttle_steps,
-        "n_observations":           len(observations),
+        "total_energy_j": round(total_energy_j, 3),
+        "total_tokens": total_tokens,
+        "mean_energy_per_token_j": round(sum(epts) / len(epts), 6) if epts else None,
+        "mean_tokens_per_s": round(total_tokens / (len(observations) * interval_s), 2),
+        "mean_temp_c": round(sum(all_temps) / len(all_temps), 2) if all_temps else None,
+        "max_temp_c": round(max(all_temps), 2) if all_temps else None,
+        "throttle_steps": throttle_steps,
+        "n_observations": len(observations),
     }
 
 
@@ -178,14 +175,16 @@ def _run_scheduler(
         )
 
     # Prime the workload state before the loop
-    if hasattr(source, "set_workload"):
-        source.set_workload(request_rate=2.0, phase="decode")
+    source.set_workload(request_rate=2.0, phase="decode")
 
     observations: list[GpuObservation] = []
     elapsed = 0.0
 
-    print(f"  [{scheduler_type}] starting — duration={args.duration}s "
-          f"interval={interval_s}s", flush=True)
+    print(
+        f"  [{scheduler_type}] starting — duration={args.duration}s "
+        f"interval={interval_s}s",
+        flush=True,
+    )
 
     while elapsed < args.duration:
         elapsed += interval_s
@@ -195,7 +194,7 @@ def _run_scheduler(
 
         if args.verbose:
             avg_temp = sum(obs.gpu_temp_c.values()) / max(len(obs.gpu_temp_c), 1)
-            total_e  = sum(obs.gpu_energy_j.values())
+            total_e = sum(obs.gpu_energy_j.values())
             print(
                 f"    t={elapsed:>5.0f}s  phase={obs.phase:<7s}  "
                 f"freq={obs.gpu_freq_mhz}MHz  seqs={obs.max_num_seqs:>2d}  "
@@ -205,25 +204,29 @@ def _run_scheduler(
             )
 
     summary = _compute_summary(observations, interval_s)
-    print(f"  [{scheduler_type}] done — "
-          f"total_energy={summary['total_energy_j']:.1f}J  "
-          f"total_tokens={summary['total_tokens']}  "
-          f"throttle_steps={summary['throttle_steps']}", flush=True)
+    print(
+        f"  [{scheduler_type}] done — "
+        f"total_energy={summary['total_energy_j']:.1f}J  "
+        f"total_tokens={summary['total_tokens']}  "
+        f"throttle_steps={summary['throttle_steps']}",
+        flush=True,
+    )
 
     # Serialise history from scheduler
     decisions_raw = sched.history
     decisions = [dataclasses.asdict(d) for d in decisions_raw]
 
     return {
-        "scheduler":    scheduler_type,
-        "policy":       args.static_policy if scheduler_type == "static" else "feedback",
-        "summary":      summary,
-        "decisions":    decisions,
+        "scheduler": scheduler_type,
+        "policy": args.static_policy if scheduler_type == "static" else "feedback",
+        "summary": summary,
+        "decisions": decisions,
         "observations": [_obs_to_dict(o) for o in observations],
     }
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -231,68 +234,94 @@ def main() -> None:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--mode", choices=["sim", "real"], default="sim",
+        "--mode",
+        choices=["sim", "real"],
+        default="sim",
         help="'sim' uses SimulatedGpuDataSource; 'real' uses RealGpuDataSource+Zeus.",
     )
     parser.add_argument(
-        "--scheduler", choices=["static", "runtime", "both"], default="both",
+        "--scheduler",
+        choices=["static", "runtime", "both"],
+        default="both",
         help="Which scheduler(s) to run.  'both' is only meaningful in sim mode.",
     )
     parser.add_argument(
-        "--duration", type=float, default=360.0,
+        "--duration",
+        type=float,
+        default=360.0,
         help="Total experiment wall/sim time in seconds.",
     )
     parser.add_argument(
-        "--interval-s", type=float, default=10.0, dest="interval_s",
+        "--interval-s",
+        type=float,
+        default=10.0,
+        dest="interval_s",
         help="Observation interval in seconds.",
     )
     parser.add_argument(
         "--static-policy",
         choices=["min_energy", "max_goodput", "best_efficiency"],
-        default="min_energy", dest="static_policy",
+        default="min_energy",
+        dest="static_policy",
         help="Policy for the static scheduler.",
     )
     parser.add_argument(
-        "--thermal-limit", type=float, default=80.0, dest="thermal_limit",
+        "--thermal-limit",
+        type=float,
+        default=80.0,
+        dest="thermal_limit",
         help="Temperature ceiling (°C) for the static scheduler's thermal guard.",
     )
     parser.add_argument(
-        "--runtime-initial-freq-idx", type=int, default=2,
+        "--runtime-initial-freq-idx",
+        type=int,
+        default=2,
         dest="runtime_initial_freq_idx",
         help="Starting freq index for runtime scheduler (0=780MHz … 3=1377MHz).",
     )
     parser.add_argument(
-        "--gpu-indices", type=int, nargs="+", default=[0],
+        "--gpu-indices",
+        type=int,
+        nargs="+",
+        default=[0],
         dest="gpu_indices",
         help="GPU device indices to monitor (e.g. --gpu-indices 0 1).",
     )
     parser.add_argument(
-        "--seed", type=int, default=42,
+        "--seed",
+        type=int,
+        default=42,
         help="RNG seed for the simulator (ignored in real mode).",
     )
     parser.add_argument(
-        "--output", type=Path, default=Path("results.json"),
+        "--output",
+        type=Path,
+        default=Path("results.json"),
         help="Path to write the JSON results file.",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true",
+        "--verbose",
+        "-v",
+        action="store_true",
         help="Print per-step observations to stdout.",
     )
     args = parser.parse_args()
 
     if args.scheduler == "both" and args.mode == "real":
-        parser.error("--scheduler both requires --mode sim "
-                     "(cannot run two schedulers on the same hardware simultaneously).")
+        parser.error(
+            "--scheduler both requires --mode sim "
+            "(cannot run two schedulers on the same hardware simultaneously)."
+        )
 
     results: dict[str, Any] = {
         "meta": {
-            "mode":        args.mode,
-            "gpu":         "V100S",
-            "scenario":    SCENARIO,
-            "duration_s":  args.duration,
-            "interval_s":  args.interval_s,
-            "seed":        args.seed,
-            "timestamp":   datetime.now(timezone.utc).isoformat(),
+            "mode": args.mode,
+            "gpu": "V100S",
+            "scenario": SCENARIO,
+            "duration_s": args.duration,
+            "interval_s": args.interval_s,
+            "seed": args.seed,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     }
 
@@ -320,13 +349,17 @@ def main() -> None:
         s = results["static"]["summary"]
         r = results["runtime"]["summary"]
         rows = [
-            ("Total energy (J)",       s["total_energy_j"],          r["total_energy_j"]),
-            ("Total tokens",           s["total_tokens"],             r["total_tokens"]),
-            ("Energy/token (J)",       s["mean_energy_per_token_j"],  r["mean_energy_per_token_j"]),
-            ("Mean throughput (tok/s)",s["mean_tokens_per_s"],        r["mean_tokens_per_s"]),
-            ("Mean temp (°C)",         s["mean_temp_c"],              r["mean_temp_c"]),
-            ("Max temp (°C)",          s["max_temp_c"],               r["max_temp_c"]),
-            ("Throttle steps",         s["throttle_steps"],           r["throttle_steps"]),
+            ("Total energy (J)", s["total_energy_j"], r["total_energy_j"]),
+            ("Total tokens", s["total_tokens"], r["total_tokens"]),
+            (
+                "Energy/token (J)",
+                s["mean_energy_per_token_j"],
+                r["mean_energy_per_token_j"],
+            ),
+            ("Mean throughput (tok/s)", s["mean_tokens_per_s"], r["mean_tokens_per_s"]),
+            ("Mean temp (°C)", s["mean_temp_c"], r["mean_temp_c"]),
+            ("Max temp (°C)", s["max_temp_c"], r["max_temp_c"]),
+            ("Throttle steps", s["throttle_steps"], r["throttle_steps"]),
         ]
         for label, sv, rv in rows:
             sv_str = f"{sv:.4g}" if sv is not None else "N/A"
