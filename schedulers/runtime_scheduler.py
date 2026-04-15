@@ -22,16 +22,16 @@ Config space (must match run_static_profiling.py sweep)
     max_num_seqs: driven by phase — prefill=8, decode=32
     (matching the most common within-SLO configs in the static Pareto table)
 """
+
 from __future__ import annotations
 
-from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 
 from profilers.interface import DataSource, GpuObservation
 
 # ── Config space — must match run_static_profiling.py ────────────────────────
-FREQS_MHZ: list[int] = [780, 1000, 1200, 1377]   # index 0 = most conservative
+FREQS_MHZ: list[int] = [780, 1000, 1200, 1377]  # index 0 = most conservative
 
 # Default max_seqs per phase, chosen to maximise goodput while staying within
 # the SLO observed in static profiling for the mid-frequency range.
@@ -41,13 +41,13 @@ _SEQS_BY_PHASE: dict[str, int] = {"prefill": 8, "decode": 32}
 # Throttle at 83 °C (TAPAS / profiles.py).  Guard margins chosen so the
 # scheduler reacts before the hardware throttles, not after.
 _THROTTLE_C = 83.0
-_URGENT_C   = 81.0   # drop 2 freq steps immediately
-_WARN_C     = 78.0   # drop 1 freq step
-_COOL_C     = 70.0   # safe to attempt a step-up
+_URGENT_C = 81.0  # drop 2 freq steps immediately
+_WARN_C = 78.0  # drop 1 freq step
+_COOL_C = 70.0  # safe to attempt a step-up
 
 # ── EMA smoothing ─────────────────────────────────────────────────────────────
-_TEMP_ALPHA = 0.35   # faster — thermal changes matter quickly
-_EPT_ALPHA  = 0.20   # slower — energy/token is noisy; filter it
+_TEMP_ALPHA = 0.35  # faster — thermal changes matter quickly
+_EPT_ALPHA = 0.20  # slower — energy/token is noisy; filter it
 
 # Efficiency degradation: if ept_ema exceeds baseline by this factor, step down.
 # 15% chosen to exceed token-count noise (simulator ±5%, real hardware ±10%).
@@ -60,23 +60,24 @@ _EPT_WARMUP = 3
 # Asymmetric: be quick to step down (thermal safety), slow to step up
 # (avoid oscillation when GPU is near the warm/cool boundary).
 _COOLDOWN_DOWN = 2
-_COOLDOWN_UP   = 5
+_COOLDOWN_UP = 5
 
 
 @dataclass
 class RuntimeDecision:
     """Record of one scheduling decision, kept in RuntimeScheduler.history."""
-    sim_time: float           # simulated seconds elapsed
-    timestamp: float          # wall-clock time.time()
+
+    sim_time: float  # simulated seconds elapsed
+    timestamp: float  # wall-clock time.time()
     phase: str
     freq_mhz: int
     max_seqs: int
-    avg_temp_c: float         # mean across GPUs this interval
-    temp_ema: float           # smoothed temperature signal
+    avg_temp_c: float  # mean across GPUs this interval
+    temp_ema: float  # smoothed temperature signal
     ept_ema: Optional[float]  # smoothed energy-per-token (None until warmup)
     ept_baseline: Optional[float]
     throttled: bool
-    reason: str               # what drove the decision
+    reason: str  # what drove the decision
     config_changed: bool
 
 
@@ -107,7 +108,7 @@ class RuntimeScheduler:
     def __init__(
         self,
         source: DataSource,
-        initial_freq_idx: int = 2,        # 1200 MHz — middle of the sweep
+        initial_freq_idx: int = 2,  # 1200 MHz — middle of the sweep
         cooldown_down: int = _COOLDOWN_DOWN,
         cooldown_up: int = _COOLDOWN_UP,
     ) -> None:
@@ -115,18 +116,18 @@ class RuntimeScheduler:
 
         # Frequency state — index into FREQS_MHZ
         self._freq_idx: int = initial_freq_idx
-        self._max_seqs: int = 8            # updated on first observation
+        self._max_seqs: int = 8  # updated on first observation
 
         # EMA accumulators
         self._temp_ema: Optional[float] = None
-        self._ept_ema:  Optional[float] = None
+        self._ept_ema: Optional[float] = None
         self._ept_baseline: Optional[float] = None
         self._ept_obs: int = 0
 
         # Cooldown: positive → skip soft decisions for that many steps
         self._cooldown: int = 0
         self._cooldown_down = cooldown_down
-        self._cooldown_up   = cooldown_up
+        self._cooldown_up = cooldown_up
 
         # Full decision log
         self.history: list[RuntimeDecision] = []
@@ -164,10 +165,7 @@ class RuntimeScheduler:
             # Lock in baseline after warmup; ratchet down if ept improves
             if self._ept_obs == _EPT_WARMUP:
                 self._ept_baseline = self._ept_ema
-            elif (
-                self._ept_baseline is not None
-                and self._ept_ema < self._ept_baseline
-            ):
+            elif self._ept_baseline is not None and self._ept_ema < self._ept_baseline:
                 self._ept_baseline = self._ept_ema
 
         # Run three-layer controller
@@ -180,20 +178,26 @@ class RuntimeScheduler:
                 gpu_freq_mhz=FREQS_MHZ[self._freq_idx],
             )
 
-        self.history.append(RuntimeDecision(
-            sim_time=obs.sim_time,
-            timestamp=obs.timestamp,
-            phase=obs.phase,
-            freq_mhz=FREQS_MHZ[self._freq_idx],
-            max_seqs=self._max_seqs,
-            avg_temp_c=round(avg_temp, 2),
-            temp_ema=round(self._temp_ema, 2) if self._temp_ema is not None else avg_temp,
-            ept_ema=round(self._ept_ema, 6) if self._ept_ema is not None else None,
-            ept_baseline=round(self._ept_baseline, 6) if self._ept_baseline is not None else None,
-            throttled=obs.throttled,
-            reason=reason,
-            config_changed=config_changed,
-        ))
+        self.history.append(
+            RuntimeDecision(
+                sim_time=obs.sim_time,
+                timestamp=obs.timestamp,
+                phase=obs.phase,
+                freq_mhz=FREQS_MHZ[self._freq_idx],
+                max_seqs=self._max_seqs,
+                avg_temp_c=round(avg_temp, 2),
+                temp_ema=round(self._temp_ema, 2)
+                if self._temp_ema is not None
+                else avg_temp,
+                ept_ema=round(self._ept_ema, 6) if self._ept_ema is not None else None,
+                ept_baseline=round(self._ept_baseline, 6)
+                if self._ept_baseline is not None
+                else None,
+                throttled=obs.throttled,
+                reason=reason,
+                config_changed=config_changed,
+            )
+        )
 
         return obs
 
@@ -276,6 +280,7 @@ class RuntimeScheduler:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _ema(current: Optional[float], new_val: float, alpha: float) -> float:
     """Exponential moving average.  Returns new_val on first call (no prior state)."""

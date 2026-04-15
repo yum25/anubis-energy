@@ -14,11 +14,12 @@ Interface contract
 Schedulers depend only on GpuObservation and DataSource from profilers/interface.py.
 The concrete DataSource (simulator or real hardware) is injected at construction time.
 """
+
 from __future__ import annotations
 
 import json
 import pickle
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -26,8 +27,8 @@ from profilers.interface import DataSource, GpuObservation
 
 # ── Default artifact locations (relative to this file) ────────────────────────
 _STATIC_DIR = Path(__file__).parent.parent / "static_profiling"
-DEFAULT_PARETO_PATH  = _STATIC_DIR / "static_pareto.json"
-DEFAULT_TEMP_MODEL   = _STATIC_DIR / "static_temp_model.pkl"
+DEFAULT_PARETO_PATH = _STATIC_DIR / "static_pareto.json"
+DEFAULT_TEMP_MODEL = _STATIC_DIR / "static_temp_model.pkl"
 DEFAULT_ENERGY_MODEL = _STATIC_DIR / "static_energy_model.pkl"
 
 # Normalization constants — must match build_static_models.py exactly
@@ -38,15 +39,16 @@ _MAX_NUM_SEQS = 32
 @dataclass
 class SchedulerDecision:
     """Record of one scheduling decision, kept in StaticScheduler.history."""
-    timestamp: float          # wall-clock time of the observation that triggered this
-    phase: str                # "prefill" or "decode"
+
+    timestamp: float  # wall-clock time of the observation that triggered this
+    phase: str  # "prefill" or "decode"
     chosen_freq_mhz: int
     chosen_max_seqs: int
-    predicted_temp_c: float   # from static_temp_model
-    predicted_energy_j: float # from static_energy_model
+    predicted_temp_c: float  # from static_temp_model
+    predicted_energy_j: float  # from static_energy_model
     predicted_goodput: float  # tokens/sec (0 if outside SLO)
     policy: str
-    config_changed: bool      # True if set_config() was actually called
+    config_changed: bool  # True if set_config() was actually called
 
 
 class StaticScheduler:
@@ -107,7 +109,7 @@ class StaticScheduler:
         # does no sklearn inference at scheduling time.
         for r in self._pareto:
             feat = _features(r["gpu_freq_mhz"], r["max_num_seqs"], r["phase"])
-            r["_pred_temp_c"]   = float(self._temp_model.predict([feat])[0])
+            r["_pred_temp_c"] = float(self._temp_model.predict([feat])[0])
             r["_pred_energy_j"] = float(self._energy_model.predict([feat])[0])
 
         # Currently active config (None = not yet set)
@@ -142,17 +144,19 @@ class StaticScheduler:
             self._current_seqs = seqs
             changed = True
 
-        self.history.append(SchedulerDecision(
-            timestamp=obs.timestamp,
-            phase=obs.phase,
-            chosen_freq_mhz=freq,
-            chosen_max_seqs=seqs,
-            predicted_temp_c=candidate["_pred_temp_c"],
-            predicted_energy_j=candidate["_pred_energy_j"],
-            predicted_goodput=candidate["goodput"],
-            policy=self.policy,
-            config_changed=changed,
-        ))
+        self.history.append(
+            SchedulerDecision(
+                timestamp=obs.timestamp,
+                phase=obs.phase,
+                chosen_freq_mhz=freq,
+                chosen_max_seqs=seqs,
+                predicted_temp_c=candidate["_pred_temp_c"],
+                predicted_energy_j=candidate["_pred_energy_j"],
+                predicted_goodput=candidate["goodput"],
+                policy=self.policy,
+                config_changed=changed,
+            )
+        )
 
         return obs
 
@@ -191,14 +195,15 @@ class StaticScheduler:
         thermal guard is relaxed and policy ranking is applied to all of them.
         """
         within_slo = [
-            r for r in self._pareto
-            if r["phase"] == phase and r["within_slo"]
+            r for r in self._pareto if r["phase"] == phase and r["within_slo"]
         ]
         if not within_slo:
             return None
 
         # Apply thermal guard
-        candidates = [r for r in within_slo if r["_pred_temp_c"] <= self.thermal_limit_c]
+        candidates = [
+            r for r in within_slo if r["_pred_temp_c"] <= self.thermal_limit_c
+        ]
         if not candidates:
             # Relax guard — prefer throttle over zero goodput
             candidates = within_slo
@@ -207,6 +212,7 @@ class StaticScheduler:
 
 
 # ── Module-level helpers ───────────────────────────────────────────────────────
+
 
 def _features(freq_mhz: int, max_seqs: int, phase: str) -> list[float]:
     """
