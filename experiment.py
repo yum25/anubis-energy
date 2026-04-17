@@ -22,7 +22,8 @@ Usage examples
 
   # Real hardware — run runtime scheduler for 10 minutes
   python experiment.py --mode real --duration 600 --scheduler runtime \
-                       --gpu-indices 0 --output results/real_runtime.json
+                       --gpu-indices 0 --vllm-url http://localhost:8000 \
+                       --output results/real_runtime.json
 
 Output schema
 -------------
@@ -103,7 +104,10 @@ def _build_source(args: argparse.Namespace) -> DataSource:
     else:
         from profilers.observer import RealGpuDataSource
 
-        return RealGpuDataSource(gpu_indices=args.gpu_indices)
+        return RealGpuDataSource(
+            gpu_indices=args.gpu_indices,
+            vllm_base_url=args.vllm_url,
+        )
 
 
 def _apply_scenario_events(
@@ -286,6 +290,13 @@ def main() -> None:
         default=[0],
         dest="gpu_indices",
         help="GPU device indices to monitor (e.g. --gpu-indices 0 1).",
+    )
+    parser.add_argument(
+        "--vllm-url",
+        type=str,
+        default="http://localhost:8000",
+        dest="vllm_url",
+        help="Base URL of the running vLLM server (real mode only).",
     )
     parser.add_argument(
         "--seed",

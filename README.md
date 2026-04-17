@@ -199,11 +199,19 @@ invocation — with a cool-down period between them. Running them simultaneously
 is impossible; running them back-to-back without cooling would give the second
 scheduler an unfair thermal starting condition and contaminate the comparison.
 
-### Before either run: start vLLM
+### Start the vLLM server
 
 The experiment script controls the scheduler (GPU frequency and batch size via
 `nvidia-smi -ac`) but does not drive the vLLM server itself. Start the server
-first and keep it running for both scheduler runs:
+first and keep it running for **both** scheduler runs.
+
+**V100S-specific flags** — the V100S is CUDA Compute Capability 7.0; two flags
+are mandatory or vLLM will fail to start or silently mis-compile kernels:
+
+| Flag | Reason |
+|---|---|
+| `--dtype float16` | V100S has no bfloat16 hardware support |
+| `--enforce-eager` | Disables CUDA graph capture, which is broken on CC 7.0 in vLLM 0.4.x |
 
 ```bash
 python -m vllm.entrypoints.openai.api_server \
@@ -213,12 +221,54 @@ python -m vllm.entrypoints.openai.api_server \
   --max-num-seqs 32 \
   --max-model-len 2048 \
   --gpu-memory-utilization 0.85 \
-  --port 8000 &
+  --port 8000 \
+  --disable-log-requests &
 ```
 
-Send traffic to it throughout both runs (e.g. with a load generator), and call
-`RealGpuDataSource.notify_tokens_generated(n)` from your request handler so
-the scheduler can track throughput.
+Wait for the server to finish loading (watch stderr for `Application startup complete`):
+
+```bash
+# In another terminal — returns 200 when ready
+curl -s http://localhost:8000/health
+```
+
+> **Troubleshooting the vLLM server**
+>
+> - *OOM on startup* — lower `--gpu-memory-utilization` to `0.80`.
+> - *"CUDA kernel errors"* — confirm `--enforce-eager` is present.
+> - *Slow first request* — normal; the KV cache is allocated on the first call.
+> - *Server not found after `&`* — startup takes 2–4 minutes for Llama-2-7B on
+>   first load; wait for the health check to return 200 before running experiments.
+
+### Token counting
+
+`experiment.py` measures tokens via vLLM's built-in Prometheus metrics endpoint
+(`GET /metrics`). The `RealGpuDataSource` snapshots the cumulative
+`vllm:generation_tokens_total` counter at the start and end of each 10-second
+observation interval and computes the delta. No external load generator or
+manual callback is required — the vLLM server accumulates the counter on its own
+as it processes requests.
+
+To verify the metrics endpoint is working before running experiments:
+
+```bash
+curl -s http://localhost:8000/metrics | grep generation_tokens
+# vllm:generation_tokens_total 0.0
+```
+
+You still need to drive traffic to the server during the experiment. A simple
+background load generator:
+
+```bash
+# In a separate terminal — sends one request per second throughout both runs
+while true; do
+  curl -s -X POST http://localhost:8000/v1/completions \
+    -H "Content-Type: application/json" \
+    -d '{"model":"meta-llama/Llama-2-7b-hf","prompt":"Summarize the history of machine learning in detail:","max_tokens":200}' \
+    > /dev/null
+  sleep 1
+done &
+```
 
 ### Run 1 — static scheduler
 
@@ -229,6 +279,7 @@ python experiment.py \
   --static-policy min_energy \
   --duration 360 \
   --gpu-indices 0 \
+  --vllm-url http://localhost:8000 \
   --output results/real_static.json
 ```
 
@@ -238,7 +289,6 @@ Wait until the GPU returns to near-idle temperature (≈ 40–50 °C) before
 starting the second run. This typically takes 5–10 minutes.
 
 ```bash
-# Monitor until stable
 watch -n 5 "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader"
 ```
 
@@ -250,6 +300,7 @@ python experiment.py \
   --scheduler runtime \
   --duration 360 \
   --gpu-indices 0 \
+  --vllm-url http://localhost:8000 \
   --output results/real_runtime.json
 ```
 
@@ -272,6 +323,7 @@ Load both JSON files and compare the `summary` fields in each. The full
 | `--thermal-limit`            | `80.0`         | Static scheduler thermal ceiling (°C)                    |
 | `--runtime-initial-freq-idx` | `2`            | Runtime start freq index: 0=780 1=1000 2=1200 3=1377 MHz |
 | `--gpu-indices`              | `0`            | GPU device indices (e.g. `--gpu-indices 0 1`)            |
+| `--vllm-url`                 | `http://localhost:8000` | vLLM server base URL (real mode only)           |
 | `--seed`                     | `42`           | Simulator RNG seed (ignored in real mode)                |
 | `--output`                   | `results.json` | Path for the JSON results file                           |
 | `--verbose` / `-v`           | off            | Print per-step observations to stdout                    |
