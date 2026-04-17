@@ -11,3 +11,8 @@ __pycache__/
 
 # anubis-energy
 results/
+static_pareto.json
+static_energy_model.pkl
+static_temp_model.pkl
+static_profile.json
+

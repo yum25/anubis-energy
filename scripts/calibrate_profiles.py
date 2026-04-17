@@ -55,19 +55,26 @@
 #     partitions energy by prefill/decode phase. No exact ratio for 7B/70B
 #     at these batch sizes; 2.5x is used as a midpoint estimate.
 #
-# ── Batch size restriction for polynomial fitting ─────────────────────────────
+# ── Batch size policy for polynomial fitting ──────────────────────────────────
 #
-#   Llama-3.1-70B-Instruct requires tensor parallelism across multiple GPUs.
-#   At large batch sizes the recovered power (J/tok * tok/s) reflects
-#   multi-GPU system power, not single-GPU draw. We restrict fitting to
-#   batch sizes 8-32, which:
-#     (a) keeps recovered power within plausible single-GPU range
-#     (b) matches the simulator's max_num_seqs sweep of 1-32
+#   H100 / B200 (simulator profiles — multi-GPU):
+#     All available batch sizes are used for fitting (full range).
+#     Llama-3.1-70B-Instruct requires tensor parallelism across multiple GPUs,
+#     so all ML.Energy readings implicitly reflect multi-GPU system power.
+#     Using the full range produces a better-conditioned overdetermined fit
+#     (12 points for H100, 10 for B200) rather than the exact 3-point fit
+#     from the restricted range. The resulting polynomial is evaluated only
+#     within load% 0-100 in the simulator, so out-of-range extrapolation is
+#     not a concern.
+#     NOTE: These profiles are used exclusively in sim mode. The inflated
+#     multi-GPU power figures are consistent throughout the simulation, so
+#     relative comparisons between schedulers remain valid. Absolute energy
+#     numbers from sim mode should not be interpreted as single-GPU figures.
 #
-#   With only 3 fit points (batch=8,16,32) a degree-2 polynomial fits
-#   exactly by construction (3 points = 3 coefficients, R²=1.0).
-#   This is not a validated model — it is a plausible curve through
-#   empirically grounded anchor points. Noted as such in output.
+#   V100 (real hardware profile — single GPU):
+#     Only one operating point is available from Samsi et al. 2023.
+#     The polynomial is manually calibrated to two TDP anchors (idle and full
+#     load). This profile is used for real hardware experiments on CloudLab.
 
 from __future__ import annotations
 import numpy as np
@@ -123,10 +130,6 @@ GPU_SPECS = {
     "B200": {"tdp_w": 1000, "throttle_temp_c": 85.0, "max_freq_mhz": 2050},
 }
 
-# Polynomial fitting range (see module docstring for rationale)
-SIM_BATCH_MIN = 8
-SIM_BATCH_MAX = 32
-
 # Representative decode batch for the profile constant.
 # Using the smallest fit batch (8) as it is closest to single-request serving.
 REP_BATCH = 8
@@ -146,49 +149,54 @@ THERMAL_TAU_S = 45.0
 
 def fit_power_polynomial(
     rows: list[dict],
-    batch_min: int,
-    batch_max: int,
     tdp_w: float,
     gpu_name: str,
 ) -> tuple[float, float, float]:
     """
     Fit a degree-2 polynomial P = a*load² + b*load + c to recovered power
-    values within [batch_min, batch_max].
+    values across all available batch sizes.
 
-    Load proxy: load_pct = (batch / max_fit_batch) * 100
+    Load proxy: load_pct = (batch / max_batch) * 100
     Power recovery: power_W = ept_J_tok * tps_tok_s
+
+    For H100 and B200 this is an overdetermined least-squares fit (12 and 10
+    points respectively). For V100 this function is not called — the polynomial
+    is manually calibrated instead.
 
     Returns (a, b, c) coefficients.
     """
-    fit_rows = [r for r in rows if batch_min <= r["batch"] <= batch_max]
-    if len(fit_rows) < 2:
-        raise ValueError(
-            f"{gpu_name}: fewer than 2 data points in batch range "
-            f"[{batch_min}, {batch_max}]. Cannot fit polynomial."
-        )
-
-    batches = np.array([r["batch"] for r in fit_rows])
-    power_w = np.array([r["ept"] * r["tps"] for r in fit_rows])
+    batches = np.array([r["batch"] for r in rows])
+    power_w = np.array([r["ept"] * r["tps"] for r in rows])
     max_batch = batches.max()
     load_pct = (batches / max_batch) * 100.0
 
     coeffs = np.polyfit(load_pct, power_w, deg=2)
     a, b, c = coeffs
 
+    # Compute R² for the overdetermined fit
+    predicted = np.polyval(coeffs, load_pct)
+    ss_res = np.sum((power_w - predicted) ** 2)
+    ss_tot = np.sum((power_w - power_w.mean()) ** 2)
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0
+
+    print(f"  Fit points ({len(rows)} — overdetermined least-squares, R²={r2:.4f}):")
     print(
-        f"  Fit points ({len(fit_rows)} — degree-2 fits exactly, R²=1.0 by construction):"
+        f"  {'batch':>6} | {'load%':>6} | {'power_W':>8} | {'fitted_W':>8} | {'resid_W':>8}"
     )
-    for batch, load, pw in zip(batches, load_pct, power_w):
-        print(f"    batch={batch:4d}  load={load:5.1f}%  power={pw:.1f}W")
+    print(f"  {'-' * 6}-+-{'-' * 6}-+-{'-' * 8}-+-{'-' * 8}-+-{'-' * 8}")
+    for batch, load, pw, fit in zip(batches, load_pct, power_w, predicted):
+        print(
+            f"  {batch:>6} | {load:>6.1f} | {pw:>8.1f} | {fit:>8.1f} | {pw - fit:>+8.1f}"
+        )
 
     p_idle = float(np.polyval(coeffs, 5))
     p_full = float(np.polyval(coeffs, 100))
     print(f"  Extrapolated P(5%  load) = {p_idle:.1f}W  (idle estimate)")
     print(f"  Extrapolated P(100% load) = {p_full:.1f}W  (TDP = {tdp_w}W)")
     if p_full > tdp_w * 1.15:
-        print("  NOTE: P(100%) exceeds TDP by >15% — multi-GPU power likely included.")
+        print("  NOTE: P(100%) exceeds TDP — multi-GPU system power reflected in data.")
         print(
-            "        Divide by num_gpus if known, or accept as conservative estimate."
+            "        Consistent throughout sim mode; not representative of single GPU."
         )
     if p_idle < 0:
         print(
@@ -204,7 +212,6 @@ def ept_for_batch(rows: list[dict], batch: int) -> float:
     exact = [r for r in rows if r["batch"] == batch]
     if exact:
         return exact[0]["ept"]
-    # Linear interpolation between surrounding points
     lower = [r for r in rows if r["batch"] < batch]
     upper = [r for r in rows if r["batch"] > batch]
     if not lower or not upper:
@@ -251,6 +258,9 @@ def main() -> None:
         print(separator)
         print("Source: ML.Energy benchmark-v3 (HF Hub: ml-energy/benchmark-v3)")
         print("        Llama-3.1-70B-Instruct, lm-arena-chat, Chung et al. 2025")
+        print(
+            "        Full batch range used for polynomial fit (multi-GPU system power)."
+        )
         specs = GPU_SPECS[gpu]
 
         # Full data table
@@ -263,13 +273,8 @@ def main() -> None:
                 f"  {r['batch']:>6} | {r['ept']:>7.4f} | {r['tps']:>7.1f} | {pw:>8.1f}"
             )
 
-        # Polynomial fit on restricted range
-        print("\n  Power polynomial fit (batch {SIM_BATCH_MIN}–{SIM_BATCH_MAX}):")
-        print("  NOTE: restricted to simulator's max_num_seqs range.")
-        print("        3 points → degree-2 polynomial is exact, not validated.")
-        a, b, c = fit_power_polynomial(
-            rows, SIM_BATCH_MIN, SIM_BATCH_MAX, specs["tdp_w"], gpu
-        )
+        print(f"\n  Power polynomial fit (all {len(rows)} batch sizes):")
+        a, b, c = fit_power_polynomial(rows, specs["tdp_w"], gpu)
 
         # Representative ept
         rep_ept = ept_for_batch(rows, REP_BATCH)
@@ -312,15 +317,6 @@ def main() -> None:
     print("  Coefficients chosen so P(5)≈80W and P(100)≈250W.")
     print("  This is an estimate with no empirical validation.")
 
-    # Manual calibration for V100
-    # Solve: a*5^2 + b*5 + c = 80
-    #        a*100^2 + b*100 + c = 250
-    # Two equations, three unknowns — fix a=0.005 (small quadratic term)
-    # and solve for b and c:
-    #   25a + 5b + c = 80   →  5b + c = 80 - 0.125 = 79.875
-    #   10000a + 100b + c = 250 → 100b + c = 250 - 50 = 200
-    # Subtract: 95b = 120.125 → b = 1.264
-    #           c = 79.875 - 5*1.264 = 73.555
     v100_a = 0.005
     v100_b = 1.264
     v100_c = 73.555
@@ -385,9 +381,10 @@ def main() -> None:
         if gpu == "V100":
             poly_src = "# Manually calibrated to TDP anchors (single data point from Samsi et al.)"
         else:
+            n = len(MLENERGY_DATA[gpu])
             poly_src = (
-                f"# Fitted from ML.Energy data, batch {SIM_BATCH_MIN}-{SIM_BATCH_MAX}\n"
-                f"        # 3-point exact fit (degree-2); plausible curve, not validated"
+                f"# Fitted from ML.Energy data, all {n} batch sizes (full range)\n"
+                f"        # Overdetermined least-squares (degree-2); multi-GPU system power"
             )
         print(f"        # Power polynomial P = a*load² + b*load + c  — {poly_src}")
         print(f'        "POW_A": {r["power_a"]:.6f},')
@@ -413,3 +410,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
