@@ -109,7 +109,7 @@ def _build_source(args: argparse.Namespace) -> DataSource:
 
         return SimulatedGpuDataSource(
             gpu_indices=args.gpu_indices,
-            t_outside_c=22.0,
+            t_outside_c=args.sim_t_outside_c,
             dc_load_pct=40.0,
             gpu_model=args.gpu_model,
             seed=args.seed,
@@ -202,7 +202,8 @@ def _run_scheduler(
 
     print(
         f"  [{scheduler_type}] starting — duration={args.duration}s "
-        f"interval={interval_s}s gpu={args.gpu_model} max_freq={args.max_freq_mhz}MHz",
+        f"interval={interval_s}s gpu={args.gpu_model} max_freq={args.max_freq_mhz}MHz "
+        f"sim_ambient={args.sim_t_outside_c:.0f}C profile_ambient={args.profile_t_outside_c:.0f}C",
         flush=True,
     )
 
@@ -275,6 +276,29 @@ def main() -> None:
             "GPU model. Controls simulator physics, Pareto normalisation, and "
             "output metadata. Default V100S matches CloudLab hardware. Use H100 "
             "or B200 for sim-only runs backed by ML.Energy profiles."
+        ),
+    )
+    parser.add_argument(
+        "--sim-t-outside-c",
+        type=float,
+        default=35.0,
+        dest="sim_t_outside_c",
+        help=(
+            "Ambient temperature (°C) for the simulator at runtime. "
+            "Default: 35.0°C — warmer than the profile measurement baseline "
+            "to create a realistic prior mismatch. Use 22.0 for no mismatch."
+        ),
+    )
+    parser.add_argument(
+        "--profile-t-outside-c",
+        type=float,
+        default=22.0,
+        dest="profile_t_outside_c",
+        help=(
+            "Ambient temperature (°C) used when the static profile was generated. "
+            "Set lower than the simulator's actual runtime ambient to create a "
+            "deliberate prior mismatch: the static scheduler uses a profile measured "
+            "in cool conditions while the simulator runs hotter. Default: 22.0°C."
         ),
     )
     parser.add_argument(
@@ -360,6 +384,8 @@ def main() -> None:
             "mode": args.mode,
             "gpu": args.gpu_model,
             "max_freq_mhz": args.max_freq_mhz,
+            "sim_t_outside_c": args.sim_t_outside_c,
+            "profile_t_outside_c": args.profile_t_outside_c,
             "scenario": SCENARIO,
             "duration_s": args.duration,
             "interval_s": args.interval_s,
@@ -413,3 +439,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

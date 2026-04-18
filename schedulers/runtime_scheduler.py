@@ -368,7 +368,12 @@ class RuntimeScheduler:
             if freq not in FREQS_MHZ or seqs not in MAX_SEQS_OPS:
                 continue
 
-            energy = float(r["steady_state_energy_j"])
+            duration = float(r.get("steady_state_duration_s", 60.0))
+            interval_energy = (
+                float(r["steady_state_energy_j"]) / duration
+            ) * 10.0  # normalize to 10s interval
+            energy = interval_energy
+
             goodput = float(r["output_throughput"])
             temp = float(r["avg_gpu_temp_c"]) if r.get("avg_gpu_temp_c") else 50.0
             p99 = r.get("p99_e2el_ms")
@@ -691,3 +696,4 @@ def _policy_score(entry: TableEntry, policy: str) -> float:
 
 def _rank(candidates: list[TableEntry], policy: str) -> TableEntry:
     return max(candidates, key=lambda e: _policy_score(e, policy))
+
