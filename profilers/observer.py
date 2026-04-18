@@ -134,7 +134,7 @@ class RealGpuDataSource(DataSource):
                 else 0.0
             )
             # Power (mean over interval)
-            pw_readings = power_data.get(key, [])
+            pw_readings = power_data.get(key) or power_data.get(idx, [])
             gpu_powers[key] = (
                 sum(p for _, p in pw_readings) / len(pw_readings)
                 if pw_readings
