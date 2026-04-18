@@ -9,7 +9,7 @@ CloudLab setup:
     export HF_TOKEN=<your_token>
     sudo nvidia-persistenced    # required for nvidia-smi -ac to stick
 """
-import json, itertools, os, statistics, subprocess, threading, time
+import json, itertools, os, statistics, subprocess, sys, threading, time
 import concurrent.futures
 from pathlib import Path
 
@@ -58,33 +58,37 @@ def _make_prompt(target_tokens: float) -> str:
     return (sentence * reps)[:target_chars]
 
 
-def _wait_for_server(timeout: int = 300) -> None:
+def _wait_for_server(proc: subprocess.Popen, timeout: int = 300) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            output = proc.stdout.read().decode(errors="replace")
+            raise RuntimeError(f"vLLM server exited early (rc={proc.returncode}):\n{output}")
         try:
             if http.get(f"{BASE_URL}/health", timeout=2).status_code == 200:
                 return
         except Exception:
             pass
         time.sleep(3)
-    raise RuntimeError("vLLM server did not become ready in time")
+    output = proc.stdout.read1().decode(errors="replace") if proc.stdout else ""
+    raise RuntimeError(f"vLLM server did not become ready in time.\n{output}")
 
 
 def _start_server(max_num_seqs: int) -> subprocess.Popen:
     cmd = [
-        "python", "-m", "vllm.entrypoints.openai.api_server",
+        sys.executable, "-m", "vllm.entrypoints.openai.api_server",
         "--model",                   MODEL_ID,
         "--dtype",                   "float16",  # V100S: no bfloat16
         "--enforce-eager",                       # disable CUDA graphs (CC 7.0)
         "--max-num-seqs",            str(max_num_seqs),
-        "--max-model-len",           "2048",     # caps KV cache; fits all phases
+        "--max-model-len",           "2048",     # caps KV cache; fits all shapes
         "--gpu-memory-utilization",  "0.85",
         "--port",                    str(VLLM_PORT),
         "--disable-log-requests",
     ]
     print(f"  [server] starting (max_num_seqs={max_num_seqs})…")
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    _wait_for_server()
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    _wait_for_server(proc)
     print("  [server] ready")
     return proc
 
@@ -120,7 +124,7 @@ def _send_one(prompt: str, max_tokens: int) -> dict | None:
             json={"model": MODEL_ID, "prompt": prompt,
                   "max_tokens": max_tokens, "stream": True},
             stream=True,
-            timeout=300,
+            timeout=max(60, max_tokens * 2),  # 2s/token worst-case budget
         ) as resp:
             resp.raise_for_status()
             for raw in resp.iter_lines():
@@ -153,12 +157,20 @@ def _send_one(prompt: str, max_tokens: int) -> dict | None:
     }
 
 
-def _run_requests(prompt: str, max_tokens: int, n: int, concurrency: int) -> list[dict]:
+def _run_requests(prompt: str, max_tokens: int, n: int, concurrency: int,
+                  label: str = "") -> list[dict]:
     """Submit n requests with up to `concurrency` in flight at once."""
+    results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
         futs = [pool.submit(_send_one, prompt, max_tokens) for _ in range(n)]
-        return [f.result() for f in concurrent.futures.as_completed(futs)
-                if f.result() is not None]
+        for i, f in enumerate(concurrent.futures.as_completed(futs), 1):
+            r = f.result()
+            if r is not None:
+                results.append(r)
+                tok_s = r["tokens_generated"] / (r["e2el_ms"] / 1000)
+                print(f"  {label}[{i}/{n}] {r['e2el_ms']:.0f} ms  {tok_s:.1f} tok/s",
+                      flush=True)
+    return results
 
 
 def _percentile(vals: list[float], p: int) -> float:
@@ -181,7 +193,15 @@ nvidia_smi.nvmlInit()
 nvml_h = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
 zeus   = ZeusMonitor(gpu_indices=[0])
 
-results         = []
+# Load any previously completed results so we can resume
+if STATIC_PROFILE_OUT.exists():
+    with open(STATIC_PROFILE_OUT) as f:
+        results = json.load(f)
+    print(f"Resuming: {len(results)} configs already done.")
+else:
+    results = []
+
+done_ids        = {r["run_id"] for r in results}
 server_proc     = None
 current_max_seq = None
 
@@ -190,6 +210,11 @@ try:
         MAX_SEQS, PHASES.items(), GPU_FREQS
     ):
         run_id = f"llama2-7b_{freq}_{max_seqs}_{phase}"
+
+        if run_id in done_ids:
+            print(f"\n=== {run_id} (skipping — already done) ===")
+            continue
+
         print(f"\n=== {run_id} ===")
 
         # Restart server only when max_seqs changes (3 restarts total)
@@ -209,7 +234,7 @@ try:
 
         # Warmup — not measured, lets GPU reach thermal steady state at this freq
         print(f"  warmup ({WARMUP_REQUESTS} req)…")
-        _run_requests(prompt, max_out, WARMUP_REQUESTS, workers)
+        _run_requests(prompt, max_out, WARMUP_REQUESTS, workers, label="warmup ")
 
         # Measurement window
         temp_before = nvidia_smi.nvmlDeviceGetTemperature(
@@ -226,7 +251,7 @@ try:
 
         zeus.begin_window(run_id, sync_execution=False)
         t_start = time.monotonic()
-        reqs    = _run_requests(prompt, max_out, NUM_REQUESTS, workers)
+        reqs    = _run_requests(prompt, max_out, NUM_REQUESTS, workers, label="req ")
         t_end   = time.monotonic()
         mes     = zeus.end_window(run_id, sync_execution=False)
 
@@ -279,14 +304,14 @@ try:
         print(f"  p99 e2el: {_percentile(e2el_vals, 99):.0f} ms")
         print(f"  tok/s:  {total_tokens/duration_s:.1f}")
 
+        STATIC_PROFILE_OUT.parent.mkdir(parents=True, exist_ok=True)
+        with open(STATIC_PROFILE_OUT, "w") as f:
+            json.dump(results, f, indent=2)
+
 finally:
     if server_proc:
         _stop_server(server_proc)
     nvidia_smi.nvmlShutdown()
-
-STATIC_PROFILE_OUT.parent.mkdir(parents=True, exist_ok=True)
-with open(STATIC_PROFILE_OUT, "w") as f:
-    json.dump(results, f, indent=2)
 
 print(f"\nCollected {len(results)}/24 configurations.")
 print(f"Saved → {STATIC_PROFILE_OUT}")

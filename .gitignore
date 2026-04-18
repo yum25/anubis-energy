@@ -3,8 +3,9 @@
 .env
 
 # venv
-/env
-/venv
+env/
+venv/
+.venv/
 
 # python 
 __pycache__/
