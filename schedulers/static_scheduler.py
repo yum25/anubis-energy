@@ -216,7 +216,7 @@ class StaticScheduler:
 # ── Module-level helpers ───────────────────────────────────────────────────────
 
 
-def _features(freq_mhz: int, max_seqs: int, phase: str) -> list[float]:
+def _features(freq_mhz: int, max_seqs: int, phase: str, temp_before_c: float = 50.0) -> list[float]:
     """
     Normalized feature vector matching build_static_models.py exactly:
       [gpu_freq_mhz / 1377, max_num_seqs / 32, phase_binary, temp_before_c / 100]
