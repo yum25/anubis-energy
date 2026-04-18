@@ -236,6 +236,7 @@ class RuntimeScheduler:
         thermal_limit_c: float = _THERMAL_LIMIT_C,
         exploration_mode: str = DEFAULT_PRESET,
         max_freq_mhz: int = 1377,
+        use_static_prior: bool = False,
     ) -> None:
         if policy not in ("min_energy", "max_goodput", "best_efficiency"):
             raise ValueError(
@@ -253,6 +254,7 @@ class RuntimeScheduler:
         self.thermal_limit_c = thermal_limit_c
         self._preset = PRESETS[exploration_mode]
         self._max_freq_mhz = max_freq_mhz
+        self._use_static_prior = use_static_prior
 
         # Build live Pareto table from static prior.
         # Note: _load_prior calls _fill_missing_entries which uses
@@ -354,6 +356,10 @@ class RuntimeScheduler:
         initialised to the offline-measured values.
         Missing combos get a synthetic entry derived from neighbours.
         """
+        if not self._use_static_prior:
+            self._build_empty_table()
+            return
+
         if not prior_path.exists():
             self._build_empty_table()
             return
