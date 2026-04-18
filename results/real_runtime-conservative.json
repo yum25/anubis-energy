@@ -1,0 +1,1371 @@
+{
+  "meta": {
+    "mode": "real",
+    "gpu": "V100S",
+    "max_freq_mhz": 1377,
+    "sim_t_outside_c": 35.0,
+    "profile_t_outside_c": 22.0,
+    "scenario": [
+      [
+        0,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ],
+      [
+        60,
+        "event",
+        {
+          "event": "thermal_spike",
+          "delta_c": 10.0
+        }
+      ],
+      [
+        120,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "prefill"
+        }
+      ],
+      [
+        240,
+        "event",
+        {
+          "event": "load_spike",
+          "duration_s": 60.0,
+          "multiplier": 1.5
+        }
+      ],
+      [
+        300,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ]
+    ],
+    "duration_s": 360.0,
+    "interval_s": 10.0,
+    "seed": 42,
+    "timestamp": "2026-04-18T06:42:28.894753+00:00"
+  },
+  "runtime": {
+    "scheduler": "runtime",
+    "policy": "min_energy",
+    "exploration_mode": "conservative",
+    "summary": {
+      "total_energy_j": 69646.689,
+      "total_tokens": 15293,
+      "mean_energy_per_token_j": 4.556691,
+      "mean_tokens_per_s": 42.48,
+      "mean_temp_c": 49.68,
+      "max_temp_c": 50.0,
+      "throttle_steps": 0,
+      "n_observations": 36
+    },
+    "decisions": [
+      {
+        "sim_time": 10.0,
+        "timestamp": 1776494562.6290426,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.88,
+        "obs_energy_j": 36310.821,
+        "obs_goodput": 319.75,
+        "table_obs_count": 0,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 20.0,
+        "timestamp": 1776494572.7018106,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 50.0,
+        "obs_energy_j": 1978.845,
+        "obs_goodput": 44.0,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 30.0,
+        "timestamp": 1776494582.714366,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.5,
+        "obs_energy_j": 1957.222,
+        "obs_goodput": 43.31,
+        "table_obs_count": 2,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 40.0,
+        "timestamp": 1776494592.7223713,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.57,
+        "obs_energy_j": 1926.472,
+        "obs_goodput": 42.32,
+        "table_obs_count": 3,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 50.0,
+        "timestamp": 1776494602.7295988,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 50.0,
+        "obs_energy_j": 1936.74,
+        "obs_goodput": 42.67,
+        "table_obs_count": 4,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 60.0,
+        "timestamp": 1776494612.7399683,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.86,
+        "obs_energy_j": 43572.985,
+        "obs_goodput": 363.27,
+        "table_obs_count": 0,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "goodput_degraded_0.13x"
+      },
+      {
+        "sim_time": 70.0,
+        "timestamp": 1776494622.800004,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 16,
+        "avg_temp_c": 49.11,
+        "obs_energy_j": 50000.0,
+        "obs_goodput": 400.0,
+        "table_obs_count": 0,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "exploring_candidate"
+      },
+      {
+        "sim_time": 80.0,
+        "timestamp": 1776494632.8803594,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.88,
+        "obs_energy_j": 1851.617,
+        "obs_goodput": 40.0,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "kept_explored_config"
+      },
+      {
+        "sim_time": 90.0,
+        "timestamp": 1776494642.9595199,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.62,
+        "obs_energy_j": 1887.614,
+        "obs_goodput": 41.14,
+        "table_obs_count": 2,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 100.0,
+        "timestamp": 1776494652.9705017,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.89,
+        "obs_energy_j": 1909.701,
+        "obs_goodput": 41.79,
+        "table_obs_count": 3,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 110.0,
+        "timestamp": 1776494662.9796882,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 48.88,
+        "obs_energy_j": 1871.115,
+        "obs_goodput": 40.59,
+        "table_obs_count": 4,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 120.0,
+        "timestamp": 1776494672.9873955,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.78,
+        "obs_energy_j": 1896.01,
+        "obs_goodput": 41.43,
+        "table_obs_count": 5,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 130.0,
+        "timestamp": 1776494682.997043,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 50.0,
+        "obs_energy_j": 1956.949,
+        "obs_goodput": 43.3,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 140.0,
+        "timestamp": 1776494693.0085185,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.62,
+        "obs_energy_j": 1956.834,
+        "obs_goodput": 43.33,
+        "table_obs_count": 2,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 150.0,
+        "timestamp": 1776494703.018209,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.62,
+        "obs_energy_j": 1956.45,
+        "obs_goodput": 43.35,
+        "table_obs_count": 3,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 160.0,
+        "timestamp": 1776494713.0269554,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 1957.284,
+        "obs_goodput": 43.37,
+        "table_obs_count": 4,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 170.0,
+        "timestamp": 1776494723.0373833,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 2195.582,
+        "obs_goodput": 107.6,
+        "table_obs_count": 0,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "goodput_degraded_0.12x"
+      },
+      {
+        "sim_time": 180.0,
+        "timestamp": 1776494733.103786,
+        "phase": "prefill",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.25,
+        "obs_energy_j": 36310.821,
+        "obs_goodput": 319.75,
+        "table_obs_count": 0,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "exploring_candidate"
+      },
+      {
+        "sim_time": 190.0,
+        "timestamp": 1776494743.167883,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 1861.4,
+        "obs_goodput": 40.2,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "kept_explored_config"
+      },
+      {
+        "sim_time": 200.0,
+        "timestamp": 1776494753.2278013,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.57,
+        "obs_energy_j": 1845.883,
+        "obs_goodput": 39.66,
+        "table_obs_count": 2,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 210.0,
+        "timestamp": 1776494763.236236,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 1879.694,
+        "obs_goodput": 40.78,
+        "table_obs_count": 3,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 220.0,
+        "timestamp": 1776494773.2450616,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 1909.113,
+        "obs_goodput": 41.66,
+        "table_obs_count": 4,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 230.0,
+        "timestamp": 1776494783.2527547,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 50.0,
+        "obs_energy_j": 1928.551,
+        "obs_goodput": 42.18,
+        "table_obs_count": 5,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 240.0,
+        "timestamp": 1776494793.2654781,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.88,
+        "obs_energy_j": 1938.435,
+        "obs_goodput": 42.75,
+        "table_obs_count": 5,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 250.0,
+        "timestamp": 1776494803.331622,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 49.57,
+        "obs_energy_j": 1940.794,
+        "obs_goodput": 42.55,
+        "table_obs_count": 6,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 260.0,
+        "timestamp": 1776494813.4017966,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.71,
+        "obs_energy_j": 1948.769,
+        "obs_goodput": 43.0,
+        "table_obs_count": 6,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "ept_degraded_2.24x"
+      },
+      {
+        "sim_time": 270.0,
+        "timestamp": 1776494823.4648643,
+        "phase": "prefill",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.14,
+        "obs_energy_j": 1976.466,
+        "obs_goodput": 43.7,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "exploring_candidate"
+      },
+      {
+        "sim_time": 280.0,
+        "timestamp": 1776494833.527619,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.57,
+        "obs_energy_j": 1926.663,
+        "obs_goodput": 42.19,
+        "table_obs_count": 7,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "kept_explored_config"
+      },
+      {
+        "sim_time": 290.0,
+        "timestamp": 1776494843.5919423,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 50.0,
+        "obs_energy_j": 1934.98,
+        "obs_goodput": 42.26,
+        "table_obs_count": 7,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 300.0,
+        "timestamp": 1776494853.6561952,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.86,
+        "obs_energy_j": 1943.089,
+        "obs_goodput": 42.64,
+        "table_obs_count": 8,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 310.0,
+        "timestamp": 1776494863.7201014,
+        "phase": "decode",
+        "freq_mhz": 1200,
+        "max_seqs": 16,
+        "avg_temp_c": 49.86,
+        "obs_energy_j": 1920.771,
+        "obs_goodput": 42.11,
+        "table_obs_count": 6,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 320.0,
+        "timestamp": 1776494873.7286115,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 16,
+        "avg_temp_c": 49.71,
+        "obs_energy_j": 1928.292,
+        "obs_goodput": 42.3,
+        "table_obs_count": 1,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 330.0,
+        "timestamp": 1776494883.7917442,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 16,
+        "avg_temp_c": 49.33,
+        "obs_energy_j": 1890.972,
+        "obs_goodput": 41.07,
+        "table_obs_count": 2,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 340.0,
+        "timestamp": 1776494893.8002565,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 16,
+        "avg_temp_c": 49.57,
+        "obs_energy_j": 1910.964,
+        "obs_goodput": 41.77,
+        "table_obs_count": 3,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 350.0,
+        "timestamp": 1776494903.8087776,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 16,
+        "avg_temp_c": 49.88,
+        "obs_energy_j": 1924.366,
+        "obs_goodput": 42.23,
+        "table_obs_count": 4,
+        "policy": "min_energy",
+        "mode": "exploit",
+        "exploration_mode": "conservative",
+        "config_changed": false,
+        "reason": "pareto_select"
+      },
+      {
+        "sim_time": 360.0,
+        "timestamp": 1776494913.816476,
+        "phase": "decode",
+        "freq_mhz": 1000,
+        "max_seqs": 16,
+        "avg_temp_c": 49.75,
+        "obs_energy_j": 1943.51,
+        "obs_goodput": 42.89,
+        "table_obs_count": 5,
+        "policy": "min_energy",
+        "mode": "explore",
+        "exploration_mode": "conservative",
+        "config_changed": true,
+        "reason": "goodput_degraded_0.11x"
+      }
+    ],
+    "observations": [
+      {
+        "timestamp": 1776494562.6290426,
+        "sim_time": 10.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1973.1160000003874
+        },
+        "tokens_generated": 438,
+        "energy_per_token_j": 4.504831050229195,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494572.7018106,
+        "sim_time": 20.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1978.845000000205
+        },
+        "tokens_generated": 440,
+        "energy_per_token_j": 4.497375000000465,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494582.714366,
+        "sim_time": 30.0,
+        "gpu_temp_c": {
+          "0": 49.5
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1906.7669999999925
+        },
+        "tokens_generated": 417,
+        "energy_per_token_j": 4.572582733812932,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494592.7223713,
+        "sim_time": 40.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1854.7229999997653
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.6368074999994136,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494602.7295988,
+        "sim_time": 50.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1960.6970000001602
+        },
+        "tokens_generated": 435,
+        "energy_per_token_j": 4.507349425287725,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494612.7399683,
+        "sim_time": 60.0,
+        "gpu_temp_c": {
+          "0": 49.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1959.3080000001937
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.514534562212428,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494622.800004,
+        "sim_time": 70.0,
+        "gpu_temp_c": {
+          "0": 49.111111111111114
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1851.6170000000857
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.629042500000214,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494632.8803594,
+        "sim_time": 80.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1928.2919999998994
+        },
+        "tokens_generated": 423,
+        "energy_per_token_j": 4.558609929077776,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494642.9595199,
+        "sim_time": 90.0,
+        "gpu_temp_c": {
+          "0": 49.625
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1971.6060000001453
+        },
+        "tokens_generated": 438,
+        "energy_per_token_j": 4.501383561644167,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494652.9705017,
+        "sim_time": 100.0,
+        "gpu_temp_c": {
+          "0": 49.888888888888886
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1961.2370000001974
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.529415704388446,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494662.9796882,
+        "sim_time": 110.0,
+        "gpu_temp_c": {
+          "0": 48.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1781.082999999635
+        },
+        "tokens_generated": 378,
+        "energy_per_token_j": 4.711859788358822,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494672.9873955,
+        "sim_time": 120.0,
+        "gpu_temp_c": {
+          "0": 49.77777777777778
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1954.0990000003949
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.502532258065426,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494682.997043,
+        "sim_time": 130.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1956.9490000000224
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.519512702078574,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494693.0085185,
+        "sim_time": 140.0,
+        "gpu_temp_c": {
+          "0": 49.625
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1956.5640000002459
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.508211981567387,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494703.018209,
+        "sim_time": 150.0,
+        "gpu_temp_c": {
+          "0": 49.625
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1955.555999999866
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.50588940092135,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494713.0269554,
+        "sim_time": 160.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1959.2310000001453
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.514357142857477,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494723.0373833,
+        "sim_time": 170.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1894.4530000002123
+        },
+        "tokens_generated": 413,
+        "energy_per_token_j": 4.587053268765647,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494733.103786,
+        "sim_time": 180.0,
+        "gpu_temp_c": {
+          "0": 49.25
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1861.3999999999069
+        },
+        "tokens_generated": 402,
+        "energy_per_token_j": 4.630348258706236,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494743.167883,
+        "sim_time": 190.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1976.466000000015
+        },
+        "tokens_generated": 437,
+        "energy_per_token_j": 4.522805491990881,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494753.2278013,
+        "sim_time": 200.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1809.6779999998398
+        },
+        "tokens_generated": 384,
+        "energy_per_token_j": 4.7127031249995825,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494763.236236,
+        "sim_time": 210.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1958.5860000001267
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.512870967742227,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494773.2450616,
+        "sim_time": 220.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1977.7560000000522
+        },
+        "tokens_generated": 437,
+        "energy_per_token_j": 4.525757437071057,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494783.2527547,
+        "sim_time": 230.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1973.9079999998212
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.548175115206961,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494793.2654781,
+        "sim_time": 240.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1969.3599999998696
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.537695852534262,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494803.331622,
+        "sim_time": 250.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1972.8799999998882
+        },
+        "tokens_generated": 436,
+        "energy_per_token_j": 4.52495412844011,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494813.4017966,
+        "sim_time": 260.0,
+        "gpu_temp_c": {
+          "0": 49.714285714285715
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1921.4150000000373
+        },
+        "tokens_generated": 416,
+        "energy_per_token_j": 4.618786057692398,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494823.4648643,
+        "sim_time": 270.0,
+        "gpu_temp_c": {
+          "0": 49.142857142857146
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1875.0819999999367
+        },
+        "tokens_generated": 403,
+        "energy_per_token_j": 4.652808933002325,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494833.527619,
+        "sim_time": 280.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1980.5810000002384
+        },
+        "tokens_generated": 437,
+        "energy_per_token_j": 4.532221967963932,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494843.5919423,
+        "sim_time": 290.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1981.4180000000633
+        },
+        "tokens_generated": 437,
+        "energy_per_token_j": 4.534137299771312,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494853.6561952,
+        "sim_time": 300.0,
+        "gpu_temp_c": {
+          "0": 49.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1982.6039999998175
+        },
+        "tokens_generated": 436,
+        "energy_per_token_j": 4.547256880733526,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494863.7201014,
+        "sim_time": 310.0,
+        "gpu_temp_c": {
+          "0": 49.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1978.5470000002533
+        },
+        "tokens_generated": 437,
+        "energy_per_token_j": 4.527567505721404,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494873.7286115,
+        "sim_time": 320.0,
+        "gpu_temp_c": {
+          "0": 49.714285714285715
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1957.2299999999814
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.520161662817509,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494883.7917442,
+        "sim_time": 330.0,
+        "gpu_temp_c": {
+          "0": 49.333333333333336
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1803.8909999998286
+        },
+        "tokens_generated": 382,
+        "energy_per_token_j": 4.722227748690651,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494893.8002565,
+        "sim_time": 340.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1957.6129999998957
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.510629032257824,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494903.8087776,
+        "sim_time": 350.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1955.6380000002682
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.516484988453275,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776494913.816476,
+        "sim_time": 360.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1948.492999999784
+        },
+        "tokens_generated": 429,
+        "energy_per_token_j": 4.541941724941221,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 16,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      }
+    ]
+  }
+}
