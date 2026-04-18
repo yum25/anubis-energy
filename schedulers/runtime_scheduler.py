@@ -1,211 +1,332 @@
 """
-Runtime scheduler: adapts GPU serving config based on live GpuObservation data.
+Runtime scheduler: maintains a live Pareto table updated from real-time
+GpuObservation data, then makes decisions using the same policy logic as
+the static scheduler.
 
-Unlike the static scheduler, this scheduler never consults precomputed tables.
-It reacts to measured temperature, energy-per-token (from Zeus windows), and
-throttle events using a three-layer feedback controller:
+The key difference from the static scheduler is the data source for the
+Pareto table:
+  - Static scheduler: frozen offline measurements, never updated
+  - Runtime scheduler: starts from the same static prior, then continuously
+    refines entries with empirical observations as the experiment runs
 
-    Layer 1 — Thermal guard     (highest priority, overrides cooldown)
-    Layer 2 — Efficiency decay  (step down when energy/token degrades)
-    Layer 3 — Opportunistic     (recover frequency when thermal headroom exists)
+This means both schedulers use identical decision logic (same policies, same
+Pareto ranking, same thermal guard) — the only variable is data quality.
+Under stable conditions they should behave similarly. Under load/thermal
+spikes the runtime scheduler detects that the static prior is stale and
+explores neighboring configs to find the new empirical frontier.
 
-Zeus integration
-----------------
-Energy measurements flow in through GpuObservation.gpu_energy_j and
-GpuObservation.energy_per_token_j, which RealGpuDataSource populates from
-Zeus energy windows (ZeusMonitor.end_window).  The scheduler itself never
-imports Zeus — the DataSource abstraction handles hardware access.
+Exploration design
+------------------
+The scheduler is reactive: it stays in exploitation mode (trusting the
+current table) until observed metrics diverge from the table prior beyond
+a threshold. When degradation is detected it enters exploration mode,
+sampling neighboring (freq, max_seqs) configs to find a better operating
+point. Exploration is bounded by a cooldown and a per-event budget to
+limit the cost of config switching.
 
-Config space (must match run_static_profiling.py sweep)
---------------------------------------------------------
-    GPU freqs  : [780, 1000, 1200, 1377] MHz   (ascending)
-    max_num_seqs: driven by phase — prefill=8, decode=32
-    (matching the most common within-SLO configs in the static Pareto table)
+Exploration presets (--exploration-mode flag)
+---------------------------------------------
+  conservative  — only explore on large deviations; long cooldowns; minimal
+                  config switching. Closest to static behaviour; useful as
+                  a near-static baseline.
+  balanced       — moderate thresholds; default for most experiments.
+  aggressive     — triggers on small deviations; short cooldowns; willing
+                  to switch configs frequently. Maximum adaptivity but
+                  highest switching overhead.
+
+Config space
+------------
+  GPU freqs   : [780, 1000, 1200, 1377, 1980] MHz  (ascending)
+  max_num_seqs: [1, 8, 16, 32]                      (ascending)
+  phase       : "prefill" | "decode"  (workload-driven, not a control var)
+
+Pareto table entry fields (per (freq, max_seqs, phase) key)
+-----------------------------------------------------------
+  obs_energy_j        : EMA-smoothed measured energy per interval (J)
+  obs_goodput         : EMA-smoothed measured tokens/s
+  obs_temp_c          : EMA-smoothed measured GPU temp
+  obs_count           : number of real observations for this config
+  prior_energy_j      : initial estimate from static profile (frozen)
+  prior_goodput       : initial estimate from static profile (frozen)
+  within_slo          : bool, updated from observed latency proxy
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import math
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 from profilers.interface import DataSource, GpuObservation
 
-# ── Config space — must match run_static_profiling.py ────────────────────────
-FREQS_MHZ: list[int] = [780, 1000, 1200, 1377]  # index 0 = most conservative
+# ── Config space ──────────────────────────────────────────────────────────────
+FREQS_MHZ: list[int] = [780, 1000, 1200, 1377, 1980]
+MAX_SEQS_OPS: list[int] = [1, 8, 16, 32]
 
-# Default max_seqs per phase, chosen to maximise goodput while staying within
-# the SLO observed in static profiling for the mid-frequency range.
-_SEQS_BY_PHASE: dict[str, int] = {"prefill": 8, "decode": 32}
+# Default static profile path — same file build_static_models.py reads
+_DEFAULT_PRIOR_PATH = (
+    Path(__file__).parent.parent / "static_profiling" / "static_profile.json"
+)
 
-# ── V100S thermal thresholds ──────────────────────────────────────────────────
-# Throttle at 83 °C (TAPAS / profiles.py).  Guard margins chosen so the
-# scheduler reacts before the hardware throttles, not after.
-_THROTTLE_C = 83.0
-_URGENT_C = 81.0  # drop 2 freq steps immediately
-_WARN_C = 78.0  # drop 1 freq step
-_COOL_C = 70.0  # safe to attempt a step-up
+# EMA smoothing for live observations
+_OBS_EMA_ALPHA = 0.30  # how quickly observations replace the prior
 
-# ── EMA smoothing ─────────────────────────────────────────────────────────────
-_TEMP_ALPHA = 0.35  # faster — thermal changes matter quickly
-_EPT_ALPHA = 0.20  # slower — energy/token is noisy; filter it
+# Thermal limit — configs predicted to exceed this are excluded (matches static scheduler)
+_THERMAL_LIMIT_C = 80.0
 
-# Efficiency degradation: if ept_ema exceeds baseline by this factor, step down.
-# 15% chosen to exceed token-count noise (simulator ±5%, real hardware ±10%).
-_EPT_DEGRADE = 1.15
+# SLO threshold — matches build_static_models.py
+_SLO_P99_MS = 5000.0
 
-# Number of observations with valid ept before locking in a baseline
-_EPT_WARMUP = 3
 
-# ── Cooldown intervals ────────────────────────────────────────────────────────
-# Asymmetric: be quick to step down (thermal safety), slow to step up
-# (avoid oscillation when GPU is near the warm/cool boundary).
-_COOLDOWN_DOWN = 2
-_COOLDOWN_UP = 5
+# ── Exploration presets ───────────────────────────────────────────────────────
+
+
+@dataclass
+class ExplorationPreset:
+    """
+    All knobs controlling when and how aggressively the scheduler explores.
+
+    degradation_threshold : fractional degradation vs prior before triggering
+                            exploration. 0.20 = explore when observed metric
+                            is 20% worse than the table prior.
+    exploration_cooldown  : steps to wait between exploration events. Prevents
+                            thrashing when conditions are volatile.
+    reversion_patience    : steps to evaluate an explored config before
+                            deciding whether to keep it or revert.
+    neighbor_budget       : max configs to sample per exploration event
+                            (explores freq and max_seqs dimensions).
+    min_obs_to_trust      : observations required before treating a config's
+                            live estimate as reliable enough to prefer over
+                            the prior.
+    """
+
+    name: str
+    degradation_threshold: float
+    exploration_cooldown: int
+    reversion_patience: int
+    neighbor_budget: int
+    min_obs_to_trust: int
+
+
+PRESETS: dict[str, ExplorationPreset] = {
+    "conservative": ExplorationPreset(
+        name="conservative",
+        degradation_threshold=0.30,  # only react to large deviations (30%)
+        exploration_cooldown=6,  # long cooldown — ~60s at 10s intervals
+        reversion_patience=4,  # evaluate new config for 40s before deciding
+        neighbor_budget=2,  # explore at most 2 neighbors per event
+        min_obs_to_trust=5,  # need 5 obs before trusting live estimate
+    ),
+    "balanced": ExplorationPreset(
+        name="balanced",
+        degradation_threshold=0.20,  # react to moderate deviations (20%)
+        exploration_cooldown=4,  # moderate cooldown — ~40s
+        reversion_patience=3,  # evaluate for 30s
+        neighbor_budget=4,  # explore up to 4 neighbors
+        min_obs_to_trust=3,  # trust after 3 obs
+    ),
+    "aggressive": ExplorationPreset(
+        name="aggressive",
+        degradation_threshold=0.10,  # react to small deviations (10%)
+        exploration_cooldown=2,  # short cooldown — ~20s
+        reversion_patience=2,  # quick evaluation
+        neighbor_budget=6,  # explore broadly
+        min_obs_to_trust=2,  # trust quickly
+    ),
+}
+
+DEFAULT_PRESET = "balanced"
+
+
+# ── Pareto table entry ────────────────────────────────────────────────────────
+
+
+@dataclass
+class TableEntry:
+    """One cell in the live Pareto table, keyed by (freq_mhz, max_seqs, phase)."""
+
+    # Prior (from static profile, frozen)
+    prior_energy_j: float
+    prior_goodput: float
+    prior_temp_c: float
+    within_slo: bool
+
+    # Live estimates (start equal to prior, updated by observations)
+    obs_energy_j: float
+    obs_goodput: float
+    obs_temp_c: float
+    obs_count: int = 0
+
+    @property
+    def energy_j(self) -> float:
+        """Best available energy estimate — live if trusted, else prior."""
+        return self.obs_energy_j
+
+    @property
+    def goodput(self) -> float:
+        """Best available goodput estimate."""
+        return self.obs_goodput
+
+    @property
+    def temp_c(self) -> float:
+        return self.obs_temp_c
+
+    def update(
+        self, obs_energy_j: float, obs_goodput: float, obs_temp_c: float, alpha: float
+    ) -> None:
+        """EMA-update this entry with a new real observation."""
+        if self.obs_count == 0:
+            self.obs_energy_j = obs_energy_j
+            self.obs_goodput = obs_goodput
+            self.obs_temp_c = obs_temp_c
+        else:
+            self.obs_energy_j = alpha * obs_energy_j + (1 - alpha) * self.obs_energy_j
+            self.obs_goodput = alpha * obs_goodput + (1 - alpha) * self.obs_goodput
+            self.obs_temp_c = alpha * obs_temp_c + (1 - alpha) * self.obs_temp_c
+        self.obs_count += 1
+
+
+# ── Decision record ───────────────────────────────────────────────────────────
 
 
 @dataclass
 class RuntimeDecision:
-    """Record of one scheduling decision, kept in RuntimeScheduler.history."""
+    """Record of one scheduling decision."""
 
-    sim_time: float  # simulated seconds elapsed
-    timestamp: float  # wall-clock time.time()
+    sim_time: float
+    timestamp: float
     phase: str
     freq_mhz: int
     max_seqs: int
-    avg_temp_c: float  # mean across GPUs this interval
-    temp_ema: float  # smoothed temperature signal
-    ept_ema: Optional[float]  # smoothed energy-per-token (None until warmup)
-    ept_baseline: Optional[float]
-    throttled: bool
-    reason: str  # what drove the decision
+    avg_temp_c: float
+    obs_energy_j: float
+    obs_goodput: float
+    table_obs_count: int  # how many times current config was observed
+    policy: str
+    mode: str  # "exploit" | "explore" | "revert"
+    exploration_mode: str  # preset name
     config_changed: bool
+    reason: str
+
+
+# ── Scheduler ─────────────────────────────────────────────────────────────────
 
 
 class RuntimeScheduler:
     """
-    Feedback-control scheduler driven by live GpuObservation data from Zeus.
+    Pareto-table runtime scheduler.
 
-    Compatible with both SimulatedGpuDataSource (for simulation experiments)
-    and RealGpuDataSource (for CloudLab V100S hardware).
+    Maintains a live (freq, max_seqs, phase) → TableEntry map.
+    Initialises from the static profile prior (if available), then updates
+    entries in-place as real observations arrive.
 
-    Control layers
-    --------------
-    1. Thermal guard (overrides cooldown):
-       - throttled or avg_temp_ema >= URGENT_C  →  drop freq 2 steps
-       - avg_temp_ema >= WARN_C                  →  drop freq 1 step
-
-    2. Efficiency decay (respects cooldown):
-       - ept_ema > ept_baseline * EPT_DEGRADE    →  drop freq 1 step
-       ept_baseline is the EMA value at warmup; ratchets down if ept improves.
-
-    3. Opportunistic scale-up (respects longer cooldown):
-       - avg_temp_ema <= COOL_C                  →  step freq up 1 level
-
-    max_num_seqs is phase-driven (prefill=8, decode=32) rather than
-    dynamically tuned, keeping the comparison with the static scheduler clean.
+    Decision logic mirrors static_scheduler.py exactly — same policies,
+    same thermal guard, same ranking functions. The difference is that the
+    table entries reflect current empirical conditions rather than frozen
+    offline measurements.
     """
 
     def __init__(
         self,
         source: DataSource,
-        initial_freq_idx: int = 2,  # 1200 MHz — middle of the sweep
-        cooldown_down: int = _COOLDOWN_DOWN,
-        cooldown_up: int = _COOLDOWN_UP,
+        prior_path: Path = _DEFAULT_PRIOR_PATH,
+        policy: str = "min_energy",
+        thermal_limit_c: float = _THERMAL_LIMIT_C,
+        exploration_mode: str = DEFAULT_PRESET,
+        max_freq_mhz: int = 1377,
     ) -> None:
+        if policy not in ("min_energy", "max_goodput", "best_efficiency"):
+            raise ValueError(
+                f"Unknown policy {policy!r}. "
+                "Choose from: 'min_energy', 'max_goodput', 'best_efficiency'"
+            )
+        if exploration_mode not in PRESETS:
+            raise ValueError(
+                f"Unknown exploration_mode {exploration_mode!r}. "
+                f"Choose from: {list(PRESETS)}"
+            )
+
         self.source = source
+        self.policy = policy
+        self.thermal_limit_c = thermal_limit_c
+        self._preset = PRESETS[exploration_mode]
+        self._max_freq_mhz = max_freq_mhz
 
-        # Frequency state — index into FREQS_MHZ
-        self._freq_idx: int = initial_freq_idx
-        self._max_seqs: int = 8  # updated on first observation
+        # Build live Pareto table from static prior.
+        # Note: _load_prior calls _fill_missing_entries which uses
+        # self._max_freq_mhz, so it must be assigned before this call.
+        self._table: dict[tuple[int, int, str], TableEntry] = {}
+        self._load_prior(prior_path)
 
-        # EMA accumulators
-        self._temp_ema: Optional[float] = None
-        self._ept_ema: Optional[float] = None
-        self._ept_baseline: Optional[float] = None
-        self._ept_obs: int = 0
+        # Current active config
+        self._freq_mhz: int = FREQS_MHZ[2]  # start mid-range
+        self._max_seqs: int = 8
+        self._phase: str = "decode"
 
-        # Cooldown: positive → skip soft decisions for that many steps
-        self._cooldown: int = 0
-        self._cooldown_down = cooldown_down
-        self._cooldown_up = cooldown_up
+        # Exploration state
+        self._exploit_cooldown: int = 0  # steps until exploration allowed
+        self._exploring: bool = False
+        self._explore_candidates: list[tuple[int, int]] = []
+        self._explore_idx: int = 0
+        self._pre_explore_freq: int = self._freq_mhz
+        self._pre_explore_seqs: int = self._max_seqs
+        self._reversion_counter: int = 0
 
-        # Full decision log
         self.history: list[RuntimeDecision] = []
 
-        # Apply initial config so the first observation reflects it
+        # Apply initial config
         self.source.set_config(
             max_num_seqs=self._max_seqs,
-            gpu_freq_mhz=FREQS_MHZ[self._freq_idx],
+            gpu_freq_mhz=self._freq_mhz,
         )
 
-    # ── Public API ──────────────────────────────────────────────────────────────
+    # ── Public API ─────────────────────────────────────────────────────────────
 
     def step(self, interval_s: float) -> GpuObservation:
-        """
-        Advance the data source by interval_s, update EMA signals, run
-        the feedback controller, and return the observation from this interval.
-
-        set_config() is called only when the chosen config differs from the
-        currently active one, minimising unnecessary nvidia-smi invocations.
-        """
         obs = self.source.next_observation(interval_s)
 
-        # Phase-driven max_seqs update
-        desired_seqs = _SEQS_BY_PHASE.get(obs.phase, 8)
-        seqs_changed = desired_seqs != self._max_seqs
-        self._max_seqs = desired_seqs
-
-        # Update EMA signals from this observation
         avg_temp = sum(obs.gpu_temp_c.values()) / max(len(obs.gpu_temp_c), 1)
-        self._temp_ema = _ema(self._temp_ema, avg_temp, _TEMP_ALPHA)
+        self._phase = obs.phase
 
-        if obs.energy_per_token_j is not None:
-            self._ept_ema = _ema(self._ept_ema, obs.energy_per_token_j, _EPT_ALPHA)
-            self._ept_obs += 1
-            # Lock in baseline after warmup; ratchet down if ept improves
-            if self._ept_obs == _EPT_WARMUP:
-                self._ept_baseline = self._ept_ema
-            elif self._ept_baseline is not None and self._ept_ema < self._ept_baseline:
-                self._ept_baseline = self._ept_ema
+        # Update live table entry for the config that was active this interval
+        self._update_table(obs, avg_temp, interval_s)
 
-        # Run three-layer controller
-        freq_changed, reason = self._control(obs.throttled)
+        # Decide next config
+        freq, seqs, mode, reason = self._decide(obs, avg_temp)
 
-        config_changed = freq_changed or seqs_changed
-        if config_changed:
-            self.source.set_config(
-                max_num_seqs=self._max_seqs,
-                gpu_freq_mhz=FREQS_MHZ[self._freq_idx],
-            )
+        changed = freq != self._freq_mhz or seqs != self._max_seqs
+        if changed:
+            self._freq_mhz = freq
+            self._max_seqs = seqs
+            self.source.set_config(max_num_seqs=seqs, gpu_freq_mhz=freq)
+
+        key = (self._freq_mhz, self._max_seqs, obs.phase)
+        entry = self._table.get(key)
 
         self.history.append(
             RuntimeDecision(
                 sim_time=obs.sim_time,
                 timestamp=obs.timestamp,
                 phase=obs.phase,
-                freq_mhz=FREQS_MHZ[self._freq_idx],
-                max_seqs=self._max_seqs,
+                freq_mhz=freq,
+                max_seqs=seqs,
                 avg_temp_c=round(avg_temp, 2),
-                temp_ema=round(self._temp_ema, 2)
-                if self._temp_ema is not None
-                else avg_temp,
-                ept_ema=round(self._ept_ema, 6) if self._ept_ema is not None else None,
-                ept_baseline=round(self._ept_baseline, 6)
-                if self._ept_baseline is not None
-                else None,
-                throttled=obs.throttled,
+                obs_energy_j=round(entry.obs_energy_j, 3) if entry else 0.0,
+                obs_goodput=round(entry.obs_goodput, 2) if entry else 0.0,
+                table_obs_count=entry.obs_count if entry else 0,
+                policy=self.policy,
+                mode=mode,
+                exploration_mode=self._preset.name,
+                config_changed=changed,
                 reason=reason,
-                config_changed=config_changed,
             )
         )
 
         return obs
 
     def run(self, total_s: float, interval_s: float = 10.0) -> list[GpuObservation]:
-        """
-        Drive the scheduler for total_s seconds, stepping every interval_s.
-        Returns all GpuObservations collected.
-        """
         observations: list[GpuObservation] = []
         elapsed = 0.0
         while elapsed < total_s:
@@ -214,74 +335,365 @@ class RuntimeScheduler:
             elapsed += interval_s
         return observations
 
-    # ── Internals ───────────────────────────────────────────────────────────────
+    def best_config_for(self, phase: str) -> Optional[tuple[int, int]]:
+        """Return (freq_mhz, max_seqs) for the best config for phase per current table."""
+        entry = self._select_config(phase)
+        if entry is None:
+            return None
+        for (f, s, p), e in self._table.items():
+            if e is entry and p == phase:
+                return f, s
+        return None
 
-    def _control(self, throttled: bool) -> tuple[bool, str]:
+    # ── Internals — table management ──────────────────────────────────────────
+
+    def _load_prior(self, prior_path: Path) -> None:
         """
-        Three-layer feedback controller.
-
-        Returns (freq_changed, reason_string).
-        Thermal layers override the cooldown; efficiency and scale-up respect it.
+        Populate the table from static_profile.json.
+        All (freq, max_seqs, phase) combos in the file get a TableEntry
+        initialised to the offline-measured values.
+        Missing combos get a synthetic entry derived from neighbours.
         """
-        temp = self._temp_ema  # None only before first observation
+        if not prior_path.exists():
+            self._build_empty_table()
+            return
 
-        # ── Layer 1: Thermal guard — bypasses cooldown ─────────────────────────
-        if throttled or (temp is not None and temp >= _URGENT_C):
-            changed = self._step_freq_down(steps=2)
-            if changed:
-                self._cooldown = self._cooldown_down
-            return changed, "thermal_urgent"
+        with open(prior_path) as f:
+            records = json.load(f)
 
-        if temp is not None and temp >= _WARN_C:
-            changed = self._step_freq_down(steps=1)
-            if changed:
-                self._cooldown = self._cooldown_down
-            return changed, "thermal_warn"
+        for r in records:
+            freq = r["gpu_freq_mhz"]
+            seqs = r["max_num_seqs"]
+            phase = r["phase"]
+            if freq not in FREQS_MHZ or seqs not in MAX_SEQS_OPS:
+                continue
 
-        # Soft decisions respect cooldown
-        if self._cooldown > 0:
-            self._cooldown -= 1
-            return False, "hold_cooldown"
+            duration = float(r.get("steady_state_duration_s", 60.0))
+            interval_energy = (
+                float(r["steady_state_energy_j"]) / duration
+            ) * 10.0  # normalize to 10s interval
+            energy = interval_energy
 
-        # ── Layer 2: Efficiency decay ──────────────────────────────────────────
+            goodput = float(r["output_throughput"])
+            temp = float(r["avg_gpu_temp_c"]) if r.get("avg_gpu_temp_c") else 50.0
+            p99 = r.get("p99_e2el_ms")
+            slo = bool(p99 is not None and p99 < _SLO_P99_MS)
+
+            self._table[(freq, seqs, phase)] = TableEntry(
+                prior_energy_j=energy,
+                prior_goodput=goodput,
+                prior_temp_c=temp,
+                within_slo=slo,
+                obs_energy_j=energy,
+                obs_goodput=goodput,
+                obs_temp_c=temp,
+            )
+
+        # Fill any missing (freq, seqs, phase) combos by interpolation
+        self._fill_missing_entries()
+
+    def _build_empty_table(self) -> None:
+        """Fallback: build a table with placeholder entries when no prior exists."""
+        for freq in FREQS_MHZ:
+            for seqs in MAX_SEQS_OPS:
+                for phase in ("prefill", "decode"):
+                    self._table[(freq, seqs, phase)] = TableEntry(
+                        prior_energy_j=50000.0,
+                        prior_goodput=float(seqs * (15 if phase == "prefill" else 40)),
+                        prior_temp_c=45.0,
+                        within_slo=True,
+                        obs_energy_j=50000.0,
+                        obs_goodput=float(seqs * (15 if phase == "prefill" else 40)),
+                        obs_temp_c=45.0,
+                    )
+
+    def _fill_missing_entries(self) -> None:
+        """
+        For any (freq, seqs, phase) combo not in the prior file, synthesise
+        an entry by scaling the nearest available entry using self._max_freq_mhz
+        so the freq_factor matches the GPU model the simulator is running.
+        """
+        for freq in FREQS_MHZ:
+            for seqs in MAX_SEQS_OPS:
+                for phase in ("prefill", "decode"):
+                    key = (freq, seqs, phase)
+                    if key in self._table:
+                        continue
+                    # Find nearest freq with same seqs+phase
+                    candidates = [
+                        self._table[(f, seqs, phase)]
+                        for f in FREQS_MHZ
+                        if (f, seqs, phase) in self._table
+                    ]
+                    if candidates:
+                        ref = candidates[0]
+                        freq_scale = (freq / self._max_freq_mhz) ** 0.7
+                        self._table[key] = TableEntry(
+                            prior_energy_j=ref.prior_energy_j
+                            * (freq / self._max_freq_mhz),
+                            prior_goodput=ref.prior_goodput * freq_scale,
+                            prior_temp_c=ref.prior_temp_c,
+                            within_slo=ref.within_slo,
+                            obs_energy_j=ref.obs_energy_j * (freq / self._max_freq_mhz),
+                            obs_goodput=ref.obs_goodput * freq_scale,
+                            obs_temp_c=ref.obs_temp_c,
+                        )
+                    else:
+                        # No reference at all — use placeholder
+                        self._table[key] = TableEntry(
+                            prior_energy_j=50000.0,
+                            prior_goodput=float(seqs * 25),
+                            prior_temp_c=45.0,
+                            within_slo=True,
+                            obs_energy_j=50000.0,
+                            obs_goodput=float(seqs * 25),
+                            obs_temp_c=45.0,
+                        )
+
+    def _update_table(
+        self, obs: GpuObservation, avg_temp: float, interval_s: float
+    ) -> None:
+        """EMA-update the entry for the config that was active this interval."""
+        key = (self._freq_mhz, self._max_seqs, obs.phase)
+        if key not in self._table:
+            return
+
+        # Energy: sum across GPUs for this interval
+        interval_energy = sum(obs.gpu_energy_j.values())
+
+        # Goodput: tokens per second, using the actual interval duration
+        goodput_toks_per_s = obs.tokens_generated / max(interval_s, 1e-6)
+
+        self._table[key].update(
+            obs_energy_j=interval_energy,
+            obs_goodput=goodput_toks_per_s,
+            obs_temp_c=avg_temp,
+            alpha=_OBS_EMA_ALPHA,
+        )
+
+        # Update SLO estimate: if temp is near throttle, mark as outside SLO
+        if avg_temp >= self.thermal_limit_c:
+            self._table[key].within_slo = False
+        elif self._table[key].obs_count >= self._preset.min_obs_to_trust:
+            # Restore SLO flag if temp has recovered
+            self._table[key].within_slo = avg_temp < self.thermal_limit_c - 5.0
+
+    # ── Internals — decision logic ─────────────────────────────────────────────
+
+    def _decide(
+        self, obs: GpuObservation, avg_temp: float
+    ) -> tuple[int, int, str, str]:
+        """
+        Returns (freq_mhz, max_seqs, mode, reason).
+
+        Decision flow:
+          1. Thermal guard — override everything if near throttle
+          2. Exploration step — if actively exploring, try next candidate
+          3. Degradation check — trigger exploration if current config stale
+          4. Exploit — select best config from current Pareto table
+        """
+        phase = obs.phase
+
+        # ── 1. Thermal guard (mirrors static_scheduler thermal logic) ──────────
+        if avg_temp >= self.thermal_limit_c - 3.0:
+            safe = self._select_config(phase, thermal_override=True)
+            if safe is not None:
+                f, s = self._key_for_entry(safe, phase)
+                return f, s, "exploit", "thermal_guard"
+
+        # ── 2. Active exploration step ─────────────────────────────────────────
+        if self._exploring:
+            result = self._exploration_step(phase)
+            if result is not None:
+                return *result, "explore", "exploring_candidate"
+            freq, seqs, reason = self._conclude_exploration(phase)
+            return freq, seqs, "revert" if "revert" in reason else "exploit", reason
+
+        # ── 3. Degradation check — should we start exploring? ──────────────────
+        if self._exploit_cooldown > 0:
+            self._exploit_cooldown -= 1
+        else:
+            degraded, reason = self._is_degraded(phase)
+            if degraded:
+                self._start_exploration(phase)
+                result = self._exploration_step(phase)
+                if result is not None:
+                    return *result, "explore", reason
+
+        # ── 4. Exploit — pick best from current table ──────────────────────────
+        best = self._select_config(phase)
+        if best is None:
+            return self._freq_mhz, self._max_seqs, "exploit", "no_valid_config"
+        f, s = self._key_for_entry(best, phase)
+        return f, s, "exploit", "pareto_select"
+
+    def _is_degraded(self, phase: str) -> tuple[bool, str]:
+        """
+        Check if the current config's live observations have degraded
+        significantly from its prior, indicating the static frontier is stale.
+
+        Uses energy-per-token rather than raw energy to avoid the unit mismatch
+        between the static profile's measurement window and the live observation
+        interval. Both obs and prior goodput are in tok/s, so dividing energy
+        by goodput normalises out the window length difference.
+        """
+        key = (self._freq_mhz, self._max_seqs, phase)
+        entry = self._table.get(key)
+        if entry is None or entry.obs_count < self._preset.min_obs_to_trust:
+            return False, "insufficient_obs"
+
+        threshold = self._preset.degradation_threshold
+
+        # Energy-per-token degradation: unit-independent comparison
+        obs_ept = entry.obs_energy_j / max(entry.obs_goodput, 1e-6)
+        prior_ept = entry.prior_energy_j / max(entry.prior_goodput, 1e-6)
+        ept_ratio = obs_ept / max(prior_ept, 1e-9)
+        if ept_ratio > 1.0 + threshold:
+            return True, f"ept_degraded_{ept_ratio:.2f}x"
+
+        # Goodput degradation: observed goodput significantly lower than prior
+        goodput_ratio = entry.obs_goodput / max(entry.prior_goodput, 1e-6)
+        if goodput_ratio < 1.0 - threshold:
+            return True, f"goodput_degraded_{goodput_ratio:.2f}x"
+
+        return False, "stable"
+
+    def _start_exploration(self, phase: str) -> None:
+        """
+        Build the list of neighbor configs to explore, bounded by neighbor_budget.
+        """
+        self._pre_explore_freq = self._freq_mhz
+        self._pre_explore_seqs = self._max_seqs
+        self._exploring = True
+        self._explore_idx = 0
+        self._reversion_counter = 0
+
+        fi = FREQS_MHZ.index(self._freq_mhz) if self._freq_mhz in FREQS_MHZ else 2
+        si = MAX_SEQS_OPS.index(self._max_seqs) if self._max_seqs in MAX_SEQS_OPS else 1
+
+        neighbors: list[tuple[int, int]] = []
+        if fi > 0:
+            neighbors.append((FREQS_MHZ[fi - 1], self._max_seqs))
+        if fi < len(FREQS_MHZ) - 1:
+            neighbors.append((FREQS_MHZ[fi + 1], self._max_seqs))
+        if si > 0:
+            neighbors.append((self._freq_mhz, MAX_SEQS_OPS[si - 1]))
+        if si < len(MAX_SEQS_OPS) - 1:
+            neighbors.append((self._freq_mhz, MAX_SEQS_OPS[si + 1]))
+        if fi > 0 and si < len(MAX_SEQS_OPS) - 1:
+            neighbors.append((FREQS_MHZ[fi - 1], MAX_SEQS_OPS[si + 1]))
+
+        def score(fs: tuple[int, int]) -> float:
+            entry = self._table.get((fs[0], fs[1], phase))
+            if entry is None or not entry.within_slo:
+                return -1e9
+            return _policy_score(entry, self.policy)
+
+        neighbors.sort(key=score, reverse=True)
+        self._explore_candidates = neighbors[: self._preset.neighbor_budget]
+
+    def _exploration_step(self, phase: str) -> Optional[tuple[int, int]]:
+        """Return the next candidate config to try, or None if exhausted."""
+        while self._explore_idx < len(self._explore_candidates):
+            freq, seqs = self._explore_candidates[self._explore_idx]
+            self._explore_idx += 1
+            key = (freq, seqs, phase)
+            entry = self._table.get(key)
+            if entry and entry.obs_temp_c < self.thermal_limit_c:
+                self._reversion_counter = 0
+                return freq, seqs
+        return None
+
+    def _conclude_exploration(self, phase: str) -> tuple[int, int, str]:
+        """
+        Exploration candidates exhausted. Keep the best explored config if it
+        beats the pre-exploration config; otherwise revert.
+        """
+        self._exploring = False
+        self._exploit_cooldown = self._preset.exploration_cooldown
+
+        best_entry = None
+        best_freq = self._pre_explore_freq
+        best_seqs = self._pre_explore_seqs
+
+        for freq, seqs in self._explore_candidates:
+            key = (freq, seqs, phase)
+            entry = self._table.get(key)
+            if entry is None or entry.obs_count < 1:
+                continue
+            if not entry.within_slo:
+                continue
+            if entry.obs_temp_c >= self.thermal_limit_c:
+                continue
+            if best_entry is None or _policy_score(entry, self.policy) > _policy_score(
+                best_entry, self.policy
+            ):
+                best_entry = entry
+                best_freq = freq
+                best_seqs = seqs
+
+        pre_key = (self._pre_explore_freq, self._pre_explore_seqs, phase)
+        pre_entry = self._table.get(pre_key)
+
         if (
-            self._ept_ema is not None
-            and self._ept_baseline is not None
-            and self._ept_obs >= _EPT_WARMUP
-            and self._ept_ema > self._ept_baseline * _EPT_DEGRADE
+            best_entry is not None
+            and pre_entry is not None
+            and _policy_score(best_entry, self.policy)
+            > _policy_score(pre_entry, self.policy)
         ):
-            changed = self._step_freq_down(steps=1)
-            if changed:
-                self._cooldown = self._cooldown_down
-            return changed, "efficiency_decay"
+            return best_freq, best_seqs, "kept_explored_config"
 
-        # ── Layer 3: Opportunistic scale-up ────────────────────────────────────
-        if temp is not None and temp <= _COOL_C:
-            changed = self._step_freq_up()
-            if changed:
-                self._cooldown = self._cooldown_up
-            return changed, "scale_up"
+        return (
+            self._pre_explore_freq,
+            self._pre_explore_seqs,
+            "reverted_to_prior_config",
+        )
 
-        return False, "hold_steady"
+    def _select_config(
+        self, phase: str, thermal_override: bool = False
+    ) -> Optional[TableEntry]:
+        """
+        Filter the table to within-SLO, phase-matched, thermally safe entries,
+        then rank by policy. Mirrors static_scheduler._select_config exactly.
+        """
+        limit = (
+            self.thermal_limit_c
+            if not thermal_override
+            else (self.thermal_limit_c - 10.0)
+        )
 
-    def _step_freq_down(self, steps: int = 1) -> bool:
-        new_idx = max(0, self._freq_idx - steps)
-        if new_idx != self._freq_idx:
-            self._freq_idx = new_idx
-            return True
-        return False
+        within_slo = [
+            e for (f, s, p), e in self._table.items() if p == phase and e.within_slo
+        ]
+        if not within_slo:
+            return None
 
-    def _step_freq_up(self) -> bool:
-        new_idx = min(len(FREQS_MHZ) - 1, self._freq_idx + 1)
-        if new_idx != self._freq_idx:
-            self._freq_idx = new_idx
-            return True
-        return False
+        candidates = [e for e in within_slo if e.obs_temp_c <= limit]
+        if not candidates:
+            candidates = within_slo
+
+        return _rank(candidates, self.policy)
+
+    def _key_for_entry(self, entry: TableEntry, phase: str) -> tuple[int, int]:
+        """Reverse-lookup (freq, seqs) for a given TableEntry object."""
+        for (f, s, p), e in self._table.items():
+            if e is entry and p == phase:
+                return f, s
+        return self._freq_mhz, self._max_seqs
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Module-level helpers ──────────────────────────────────────────────────────
 
 
-def _ema(current: Optional[float], new_val: float, alpha: float) -> float:
-    """Exponential moving average.  Returns new_val on first call (no prior state)."""
-    return new_val if current is None else alpha * new_val + (1.0 - alpha) * current
+def _policy_score(entry: TableEntry, policy: str) -> float:
+    """Scalar score for ranking — higher is better."""
+    if policy == "min_energy":
+        return -entry.energy_j
+    if policy == "max_goodput":
+        return entry.goodput
+    return entry.goodput / max(entry.energy_j, 1e-9)
+
+
+def _rank(candidates: list[TableEntry], policy: str) -> TableEntry:
+    return max(candidates, key=lambda e: _policy_score(e, policy))
+

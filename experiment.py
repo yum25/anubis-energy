@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-experiment.py — static vs. runtime scheduler comparison on V100S.
+experiment.py — static vs. runtime scheduler comparison.
 
 Modes
 -----
@@ -13,22 +13,23 @@ Modes
 
 Usage examples
 --------------
-  # Simulation — compare both schedulers, save results
-  python experiment.py --mode sim --duration 360 --output results/sim_run1.json
+  # Simulation — compare both schedulers on H100, save results
+  python experiment.py --mode sim --gpu-model H100 --duration 360 \
+                       --output results/sim_h100.json
 
-  # Simulation — run only the runtime scheduler with max_goodput static policy
-  python experiment.py --mode sim --duration 360 --scheduler runtime \
-                       --static-policy max_goodput
+  # Simulation — run only the runtime scheduler with max_goodput policy
+  python experiment.py --mode sim --gpu-model H100 --duration 360 \
+                       --scheduler runtime --static-policy max_goodput
 
-  # Real hardware — run runtime scheduler for 10 minutes
-  python experiment.py --mode real --duration 600 --scheduler runtime \
+  # Real hardware — run static scheduler on V100S (default gpu-model)
+  python experiment.py --mode real --duration 360 --scheduler static \
                        --gpu-indices 0 --vllm-url http://localhost:8000 \
-                       --output results/real_runtime.json
+                       --output results/real_static.json
 
 Output schema
 -------------
   {
-    "meta": { mode, gpu, scenario, duration_s, interval_s, timestamp },
+    "meta": { mode, gpu, max_freq_mhz, scenario, duration_s, interval_s, timestamp },
     "static":  { summary metrics, observations[], decisions[] },   # if run
     "runtime": { summary metrics, observations[], decisions[] }    # if run
   }
@@ -64,6 +65,17 @@ from profilers.interface import DataSource, GpuObservation  # noqa: E402
 from schedulers.static_scheduler import StaticScheduler  # noqa: E402
 from schedulers.runtime_scheduler import RuntimeScheduler  # noqa: E402
 
+# ── GPU model → max frequency lookup ─────────────────────────────────────────
+# Used to derive the Pareto normalisation constant for both schedulers and to
+# set the simulator's physics profile.  Must stay in sync with profiles.py and
+# the freq grids in the static/runtime schedulers.
+GPU_MAX_FREQ: dict[str, int] = {
+    "V100": 1377,
+    "V100S": 1377,
+    "H100": 1980,
+    "B200": 2050,
+}
+
 # ── Experiment scenario ───────────────────────────────────────────────────────
 # A list of (sim_time_s, action, kwargs) triples applied during the run loop.
 # inject_event() is a no-op on RealGpuDataSource — safe to include in real mode.
@@ -72,7 +84,7 @@ from schedulers.runtime_scheduler import RuntimeScheduler  # noqa: E402
 #   t=  0  decode, steady load
 #   t= 60  thermal spike +10 °C  (tests thermal guard)
 #   t=120  switch to prefill phase
-#   t=240  load spike ×1.5 for 60 s (tests efficiency decay)
+#   t=240  load spike ×1.5 for 60 s (tests load adaptation)
 #   t=300  load spike expires; back to decode
 SCENARIO: list[tuple[float, str, dict]] = [
     (0, "workload", {"request_rate": 2.0, "phase": "decode"}),
@@ -97,8 +109,9 @@ def _build_source(args: argparse.Namespace) -> DataSource:
 
         return SimulatedGpuDataSource(
             gpu_indices=args.gpu_indices,
-            t_outside_c=22.0,
+            t_outside_c=args.sim_t_outside_c,
             dc_load_pct=40.0,
+            gpu_model=args.gpu_model,
             seed=args.seed,
         )
     else:
@@ -171,11 +184,14 @@ def _run_scheduler(
             source=source,
             policy=args.static_policy,
             thermal_limit_c=args.thermal_limit,
+            max_freq_mhz=args.max_freq_mhz,
         )
     else:
         sched = RuntimeScheduler(
             source=source,
-            initial_freq_idx=args.runtime_initial_freq_idx,
+            policy=args.static_policy,
+            exploration_mode=args.exploration_mode,
+            max_freq_mhz=args.max_freq_mhz,
         )
 
     # Prime the workload state before the loop
@@ -186,7 +202,8 @@ def _run_scheduler(
 
     print(
         f"  [{scheduler_type}] starting — duration={args.duration}s "
-        f"interval={interval_s}s",
+        f"interval={interval_s}s gpu={args.gpu_model} max_freq={args.max_freq_mhz}MHz "
+        f"sim_ambient={args.sim_t_outside_c:.0f}C profile_ambient={args.profile_t_outside_c:.0f}C",
         flush=True,
     )
 
@@ -216,13 +233,14 @@ def _run_scheduler(
         flush=True,
     )
 
-    # Serialise history from scheduler
-    decisions_raw = sched.history
-    decisions = [dataclasses.asdict(d) for d in decisions_raw]
+    decisions = [dataclasses.asdict(d) for d in sched.history]
 
     return {
         "scheduler": scheduler_type,
-        "policy": args.static_policy if scheduler_type == "static" else "feedback",
+        "policy": args.static_policy,
+        "exploration_mode": args.exploration_mode
+        if scheduler_type == "runtime"
+        else None,
         "summary": summary,
         "decisions": decisions,
         "observations": [_obs_to_dict(o) for o in observations],
@@ -234,7 +252,7 @@ def _run_scheduler(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compare static vs. runtime GPU schedulers on V100S.",
+        description="Compare static vs. runtime GPU schedulers.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -248,6 +266,40 @@ def main() -> None:
         choices=["static", "runtime", "both"],
         default="both",
         help="Which scheduler(s) to run.  'both' is only meaningful in sim mode.",
+    )
+    parser.add_argument(
+        "--gpu-model",
+        choices=list(GPU_MAX_FREQ.keys()),
+        default="V100S",
+        dest="gpu_model",
+        help=(
+            "GPU model. Controls simulator physics, Pareto normalisation, and "
+            "output metadata. Default V100S matches CloudLab hardware. Use H100 "
+            "or B200 for sim-only runs backed by ML.Energy profiles."
+        ),
+    )
+    parser.add_argument(
+        "--sim-t-outside-c",
+        type=float,
+        default=35.0,
+        dest="sim_t_outside_c",
+        help=(
+            "Ambient temperature (°C) for the simulator at runtime. "
+            "Default: 35.0°C — warmer than the profile measurement baseline "
+            "to create a realistic prior mismatch. Use 22.0 for no mismatch."
+        ),
+    )
+    parser.add_argument(
+        "--profile-t-outside-c",
+        type=float,
+        default=22.0,
+        dest="profile_t_outside_c",
+        help=(
+            "Ambient temperature (°C) used when the static profile was generated. "
+            "Set lower than the simulator's actual runtime ambient to create a "
+            "deliberate prior mismatch: the static scheduler uses a profile measured "
+            "in cool conditions while the simulator runs hotter. Default: 22.0°C."
+        ),
     )
     parser.add_argument(
         "--duration",
@@ -267,7 +319,7 @@ def main() -> None:
         choices=["min_energy", "max_goodput", "best_efficiency"],
         default="min_energy",
         dest="static_policy",
-        help="Policy for the static scheduler.",
+        help="Policy for the static (and runtime) scheduler.",
     )
     parser.add_argument(
         "--thermal-limit",
@@ -277,11 +329,11 @@ def main() -> None:
         help="Temperature ceiling (°C) for the static scheduler's thermal guard.",
     )
     parser.add_argument(
-        "--runtime-initial-freq-idx",
-        type=int,
-        default=2,
-        dest="runtime_initial_freq_idx",
-        help="Starting freq index for runtime scheduler (0=780MHz … 3=1377MHz).",
+        "--exploration-mode",
+        choices=["conservative", "balanced", "aggressive"],
+        default="balanced",
+        dest="exploration_mode",
+        help="Runtime scheduler exploration aggressiveness.",
     )
     parser.add_argument(
         "--gpu-indices",
@@ -318,6 +370,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Derive max_freq_mhz from gpu_model — single source of truth
+    args.max_freq_mhz = GPU_MAX_FREQ[args.gpu_model]
+
     if args.scheduler == "both" and args.mode == "real":
         parser.error(
             "--scheduler both requires --mode sim "
@@ -327,7 +382,10 @@ def main() -> None:
     results: dict[str, Any] = {
         "meta": {
             "mode": args.mode,
-            "gpu": "V100S",
+            "gpu": args.gpu_model,
+            "max_freq_mhz": args.max_freq_mhz,
+            "sim_t_outside_c": args.sim_t_outside_c,
+            "profile_t_outside_c": args.profile_t_outside_c,
             "scenario": SCENARIO,
             "duration_s": args.duration,
             "interval_s": args.interval_s,
@@ -381,3 +439,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

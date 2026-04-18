@@ -84,6 +84,7 @@ class StaticScheduler:
         energy_model_path: Path = DEFAULT_ENERGY_MODEL,
         policy: str = "min_energy",
         thermal_limit_c: float = 80.0,
+        max_freq_mhz: int = 1377,
     ) -> None:
         if policy not in ("min_energy", "max_goodput", "best_efficiency"):
             raise ValueError(
@@ -94,6 +95,7 @@ class StaticScheduler:
         self.source = source
         self.policy = policy
         self.thermal_limit_c = thermal_limit_c
+        self._max_freq_mhz = max_freq_mhz
 
         # Load artifacts
         with open(pareto_path) as f:
@@ -214,13 +216,13 @@ class StaticScheduler:
 # ── Module-level helpers ───────────────────────────────────────────────────────
 
 
-def _features(freq_mhz: int, max_seqs: int, phase: str, temp_before_c: float = 50.0) -> list[float]:
+def _features(freq_mhz: int, max_seqs: int, phase: str) -> list[float]:
     """
     Normalized feature vector matching build_static_models.py exactly:
       [gpu_freq_mhz / 1377, max_num_seqs / 32, phase_binary, temp_before_c / 100]
     """
     return [
-        freq_mhz / _MAX_FREQ_MHZ,
+        freq_mhz / max_freq_mhz,
         max_seqs / _MAX_NUM_SEQS,
         1.0 if phase == "prefill" else 0.0,
         temp_before_c / 100.0,
