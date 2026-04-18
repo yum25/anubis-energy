@@ -126,8 +126,8 @@ class RealGpuDataSource(DataSource):
 
         for idx in self.gpu_indices:
             key = str(idx)
-            # Temperature
-            gpu_readings = temp_data.get(key, [])
+            # Temperature — Zeus may key by int or str depending on version
+            gpu_readings = temp_data.get(key) or temp_data.get(idx, [])
             gpu_temps[key] = (
                 sum(t for _, t in gpu_readings) / len(gpu_readings)
                 if gpu_readings

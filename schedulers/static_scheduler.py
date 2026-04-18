@@ -222,7 +222,7 @@ def _features(freq_mhz: int, max_seqs: int, phase: str, temp_before_c: float = 5
       [gpu_freq_mhz / 1377, max_num_seqs / 32, phase_binary, temp_before_c / 100]
     """
     return [
-        freq_mhz / max_freq_mhz,
+        freq_mhz / _MAX_FREQ_MHZ,
         max_seqs / _MAX_NUM_SEQS,
         1.0 if phase == "prefill" else 0.0,
         temp_before_c / 100.0,
