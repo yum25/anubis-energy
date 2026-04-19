@@ -7,3 +7,4 @@ scipy==1.17.1
 threadpoolctl==3.6.0
 mlenergy-data==0.3.2
 zeus==0.15.1
+matplotlib==3.10.8
