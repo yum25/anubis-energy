@@ -174,7 +174,11 @@ def p99_latency_ms(phase: str, max_num_seqs: int, tps: float) -> float:
 # ── Profile generation ────────────────────────────────────────────────────────
 
 
-def generate_profile(gpu_name: str) -> list[dict]:
+def generate_profile(
+    gpu_name: str,
+    t_outside_c: float = T_OUTSIDE_C,
+    dc_load_pct: float = DC_LOAD_PCT,
+) -> list[dict]:
     """
     Sweep all (freq, max_seqs, phase) combinations for `gpu_name` and return
     a list of records in the same schema as run_static_profiling.py.
@@ -183,7 +187,7 @@ def generate_profile(gpu_name: str) -> list[dict]:
     max_freq = p["MAX_FREQ_MHZ"]
 
     # Pre-compute ambient baseline (no events, standard DC conditions)
-    t_inlet = inlet_temp(p, T_OUTSIDE_C, DC_LOAD_PCT)
+    t_inlet = inlet_temp(p, t_outside_c, dc_load_pct)
 
     records = []
 
@@ -243,7 +247,8 @@ def generate_profile(gpu_name: str) -> list[dict]:
                         "temp_before_c": round(t_inlet + 5.0, 2),  # approx idle start
                         "temp_after_c": round(temp_c, 2),
                         # Metadata
-                        "_source": f"synthetic — {gpu_name} sim profile",
+                        "_source": f"synthetic — {gpu_name} sim profile (t_outside={t_outside_c:.1f}C)",
+                        "_profile_t_outside_c": t_outside_c,
                         "_gpu_model": gpu_name,
                         "_max_freq_mhz_for_normalization": max_freq,
                     }
@@ -295,13 +300,25 @@ def main() -> None:
         default="static_profiling",
         help="Directory to write static_profile.json (default: static_profiling/).",
     )
+    parser.add_argument(
+        "--t-outside-c",
+        type=float,
+        default=22.0,
+        dest="t_outside_c",
+        help=(
+            "Ambient outside temperature (°C) assumed during offline profiling. "
+            "Lower this relative to the experiment runtime ambient to simulate a "
+            "profile measured on a cool day being used in a warmer datacenter. "
+            "Default: 22.0°C."
+        ),
+    )
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     gpu = args.gpu
-    records = generate_profile(gpu)
+    records = generate_profile(gpu, t_outside_c=args.t_outside_c)
 
     # Always write to static_profile.json so build_static_models.py picks it
     # up without any path changes. Whichever GPU was generated last is the
@@ -333,6 +350,7 @@ def main() -> None:
         f"  Energy range:    {min(energy_vals):.1f} - {max(energy_vals):.1f} J  (over {MEASUREMENT_DUR_S:.0f}s window)"
     )
     print(f"  Temp range:      {min(temp_vals):.1f} - {max(temp_vals):.1f} C")
+    print(f"  Profiling temp:  {args.t_outside_c:.1f} C outside ambient")
     print(f"  Written to:      {out_path}")
     print_patch_reminder(gpu)
 

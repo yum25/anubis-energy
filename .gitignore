@@ -3,14 +3,15 @@
 .env
 
 # venv
-/env
-/venv
+env/
+venv/
+.venv/
 
 # python 
 __pycache__/
 
 # anubis-energy
-results/
+# results/
 static_pareto.json
 static_energy_model.pkl
 static_temp_model.pkl

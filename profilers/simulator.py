@@ -170,6 +170,9 @@ class SimulatedGpuDataSource(DataSource):
         idle_temp = self._TapasPhysics.gpu_temp_steady(idle_inlet, 5.0)
         self._gpu_temp = {str(i): idle_temp for i in gpu_indices}
 
+        self._t_outside_base = t_outside_c
+        self._ambient_drift = 0.0  # accumulated drift in °C
+
         # Current serving config (scheduler calls set_config to change these)
         self._max_num_seqs = 8
         self._gpu_freq_mhz = 1410
@@ -196,11 +199,11 @@ class SimulatedGpuDataSource(DataSource):
 
     def inject_event(self, event: str, **kwargs) -> None:
         """
-        Inject a disturbance. No-op when swapped for real hardware.
         Supported:
             thermal_spike    delta_c=15.0
             load_spike       duration_s=60.0, multiplier=2.0
-            cooling_failure  duration_s=120.0
+            cooling_failure  duration_s=120.0, delta_c=20.0
+            ambient_rise     duration_s=120.0, rate_c_per_s=0.1
         """
         with self._lock:
             if event == "thermal_spike":
@@ -213,6 +216,15 @@ class SimulatedGpuDataSource(DataSource):
                         "type": event,
                         "remaining_s": kwargs.get("duration_s", 60.0),
                         **kwargs,
+                    }
+                )
+            elif event == "ambient_rise":
+                # Gradual rise — applied per-step in next_observation
+                self._events.append(
+                    {
+                        "type": "ambient_rise",
+                        "remaining_s": kwargs.get("duration_s", 120.0),
+                        "rate_c_per_s": kwargs.get("rate_c_per_s", 0.1),
                     }
                 )
 
@@ -228,6 +240,7 @@ class SimulatedGpuDataSource(DataSource):
             # Step 1: advance active events
             load_multiplier = 1.0
             cooling_degraded = False
+            cooling_delta_c = 0.0
             next_events = []
             for ev in self._events:
                 ev["remaining_s"] -= interval_s
@@ -237,6 +250,9 @@ class SimulatedGpuDataSource(DataSource):
                         load_multiplier = ev.get("multiplier", 2.0)
                     elif ev["type"] == "cooling_failure":
                         cooling_degraded = True
+                        cooling_delta_c = ev.get("delta_c", 20.0)  # store it
+                    elif ev["type"] == "ambient_rise":
+                        self._ambient_drift += ev["rate_c_per_s"] * interval_s
             self._events = next_events
 
             # Step 2: compute GPU utilisation from serving config
@@ -251,7 +267,11 @@ class SimulatedGpuDataSource(DataSource):
 
             # Step 3: TAPAS Eq 1 — inlet temperature
             # Cooling failure raises effective outside temperature
-            effective_outside = self._t_outside + (10.0 if cooling_degraded else 0.0)
+            # Outside temperature has ambient drift
+            self._t_outside = self._t_outside_base + self._ambient_drift
+            effective_outside = self._t_outside + (
+                cooling_delta_c if cooling_degraded else 0.0
+            )
             t_inlet = self._TapasPhysics.inlet_temp(effective_outside, self._dc_load)
 
             # Step 4: TAPAS Eq 2 — steady-state GPU temperature target
@@ -313,7 +333,7 @@ class SimulatedGpuDataSource(DataSource):
             # This is the key non-circular signal: static profile doesn't know
             # current temp; runtime profiler does
             avg_temp = sum(gpu_temps.values()) / len(gpu_temps)
-            thermal_penalty = 1.0 + max(0.0, (avg_temp - 65.0) * 0.003)
+            thermal_penalty = 1.0 + max(0.0, (avg_temp - 50.0) * 0.008)
             ept = base_ept * thermal_penalty if tokens > 0 else None
 
             return GpuObservation(

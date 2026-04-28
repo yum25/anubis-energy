@@ -37,6 +37,7 @@ for r in data:
             r["gpu_freq_mhz"] / 1377,
             r["max_num_seqs"] / 32,
             1.0 if r["phase"] == "prefill" else 0.0,
+            r["temp_before_c"] / 100.0,   # normalize
         ]
     )
 

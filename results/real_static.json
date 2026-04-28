@@ -1,0 +1,993 @@
+{
+  "meta": {
+    "mode": "real",
+    "gpu": "V100S",
+    "max_freq_mhz": 1377,
+    "sim_t_outside_c": 35.0,
+    "profile_t_outside_c": 22.0,
+    "scenario": [
+      [
+        0,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ],
+      [
+        60,
+        "event",
+        {
+          "event": "thermal_spike",
+          "delta_c": 10.0
+        }
+      ],
+      [
+        120,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "prefill"
+        }
+      ],
+      [
+        240,
+        "event",
+        {
+          "event": "load_spike",
+          "duration_s": 60.0,
+          "multiplier": 1.5
+        }
+      ],
+      [
+        300,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ]
+    ],
+    "duration_s": 360.0,
+    "interval_s": 10.0,
+    "seed": 42,
+    "timestamp": "2026-04-18T05:53:01.386593+00:00"
+  },
+  "static": {
+    "scheduler": "static",
+    "policy": "min_energy",
+    "exploration_mode": null,
+    "summary": {
+      "total_energy_j": 69470.711,
+      "total_tokens": 15179,
+      "mean_energy_per_token_j": 4.579189,
+      "mean_tokens_per_s": 42.16,
+      "mean_temp_c": 49.85,
+      "max_temp_c": 50.86,
+      "throttle_steps": 0,
+      "n_observations": 36
+    },
+    "decisions": [
+      {
+        "timestamp": 1776491715.1995432,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": true
+      },
+      {
+        "timestamp": 1776491725.264568,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491735.2758117,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491745.28685,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491755.294857,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491765.3034036,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491775.3149607,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491785.3265433,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491795.3377295,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491805.3557525,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491815.3645382,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491825.3757722,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491835.3895597,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491845.402971,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491855.4121914,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491865.423099,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491875.4365666,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      },
+      {
+        "timestamp": 1776491885.449072,
+        "phase": "prefill",
+        "chosen_freq_mhz": 780,
+        "chosen_max_seqs": 8,
+        "predicted_temp_c": 54.73144921671022,
+        "predicted_energy_j": -1212.9914661000948,
+        "predicted_goodput": 103.26681359610315,
+        "policy": "min_energy",
+        "config_changed": false
+      }
+    ],
+    "observations": [
+      {
+        "timestamp": 1776491595.067616,
+        "sim_time": 10.0,
+        "gpu_temp_c": {
+          "0": 50.625
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1992.5159999998286
+        },
+        "tokens_generated": 436,
+        "energy_per_token_j": 4.569990825687681,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491605.077834,
+        "sim_time": 20.0,
+        "gpu_temp_c": {
+          "0": 50.5
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1977.1680000000633
+        },
+        "tokens_generated": 431,
+        "energy_per_token_j": 4.587396751740286,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491615.0894296,
+        "sim_time": 30.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1879.0190000003204
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.697547500000801,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491625.0994182,
+        "sim_time": 40.0,
+        "gpu_temp_c": {
+          "0": 50.55555555555556
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1926.2719999998808
+        },
+        "tokens_generated": 415,
+        "energy_per_token_j": 4.641619277108147,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491635.1122346,
+        "sim_time": 50.0,
+        "gpu_temp_c": {
+          "0": 50.625
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1983.8680000002496
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.571124423963709,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491645.1210632,
+        "sim_time": 60.0,
+        "gpu_temp_c": {
+          "0": 50.666666666666664
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1983.211999999825
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.580166281754792,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491655.1330235,
+        "sim_time": 70.0,
+        "gpu_temp_c": {
+          "0": 50.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1983.4869999997318
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.570246543778183,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491665.1417067,
+        "sim_time": 80.0,
+        "gpu_temp_c": {
+          "0": 50.111111111111114
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1909.0500000002794
+        },
+        "tokens_generated": 409,
+        "energy_per_token_j": 4.667603911981123,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491675.152771,
+        "sim_time": 90.0,
+        "gpu_temp_c": {
+          "0": 50.25
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1891.1480000000447
+        },
+        "tokens_generated": 404,
+        "energy_per_token_j": 4.6810594059407045,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491685.1658235,
+        "sim_time": 100.0,
+        "gpu_temp_c": {
+          "0": 49.55555555555556
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1804.2209999999031
+        },
+        "tokens_generated": 379,
+        "energy_per_token_j": 4.760477572559111,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491695.1774812,
+        "sim_time": 110.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1963.429999999702
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.524032258063829,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491705.188387,
+        "sim_time": 120.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1958.663000000175
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.523471131640127,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491715.1995432,
+        "sim_time": 130.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1957.998999999836
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.511518433179345,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1410,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491725.264568,
+        "sim_time": 140.0,
+        "gpu_temp_c": {
+          "0": 49.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1938.4640000001527
+        },
+        "tokens_generated": 425,
+        "energy_per_token_j": 4.561091764706242,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491735.2758117,
+        "sim_time": 150.0,
+        "gpu_temp_c": {
+          "0": 49.125
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1856.3349999999627
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.640837499999907,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491745.28685,
+        "sim_time": 160.0,
+        "gpu_temp_c": {
+          "0": 49.714285714285715
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1931.598000000231
+        },
+        "tokens_generated": 424,
+        "energy_per_token_j": 4.555655660377903,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491755.294857,
+        "sim_time": 170.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1963.2269999999553
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.523564516128929,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491765.3034036,
+        "sim_time": 180.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1963.6899999999441
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.524631336405402,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491775.3149607,
+        "sim_time": 190.0,
+        "gpu_temp_c": {
+          "0": 50.25
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1959.6790000000037
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.5258175519630575,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491785.3265433,
+        "sim_time": 200.0,
+        "gpu_temp_c": {
+          "0": 49.666666666666664
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1961.00400000019
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.518442396313802,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491795.3377295,
+        "sim_time": 210.0,
+        "gpu_temp_c": {
+          "0": 49.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1792.0570000000298
+        },
+        "tokens_generated": 379,
+        "energy_per_token_j": 4.728382585752057,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491805.3557525,
+        "sim_time": 220.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1954.4560000002384
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.5137551963054,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491815.3645382,
+        "sim_time": 230.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1958.3769999998622
+        },
+        "tokens_generated": 433,
+        "energy_per_token_j": 4.522810623556263,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491825.3757722,
+        "sim_time": 240.0,
+        "gpu_temp_c": {
+          "0": 49.714285714285715
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1963.2639999999665
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.523649769585176,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491835.3895597,
+        "sim_time": 250.0,
+        "gpu_temp_c": {
+          "0": 49.857142857142854
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1908.9529999997467
+        },
+        "tokens_generated": 417,
+        "energy_per_token_j": 4.577824940047354,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491845.402971,
+        "sim_time": 260.0,
+        "gpu_temp_c": {
+          "0": 49.125
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1859.6049999999814
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.649012499999953,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491855.4121914,
+        "sim_time": 270.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1946.49599999981
+        },
+        "tokens_generated": 429,
+        "energy_per_token_j": 4.53728671328627,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491865.423099,
+        "sim_time": 280.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1965.0600000000559
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.527788018433308,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491875.4365666,
+        "sim_time": 290.0,
+        "gpu_temp_c": {
+          "0": 50.0
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1962.9129999997094
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.522841013824215,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491885.449072,
+        "sim_time": 300.0,
+        "gpu_temp_c": {
+          "0": 49.875
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1926.2980000004172
+        },
+        "tokens_generated": 423,
+        "energy_per_token_j": 4.5538959810884565,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491895.4578216,
+        "sim_time": 310.0,
+        "gpu_temp_c": {
+          "0": 49.375
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1864.6509999996051
+        },
+        "tokens_generated": 400,
+        "energy_per_token_j": 4.661627499999013,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491905.4667735,
+        "sim_time": 320.0,
+        "gpu_temp_c": {
+          "0": 49.75
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1929.2669999999925
+        },
+        "tokens_generated": 423,
+        "energy_per_token_j": 4.560914893617004,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491915.481672,
+        "sim_time": 330.0,
+        "gpu_temp_c": {
+          "0": 49.77777777777778
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1953.2909999997355
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.500670506911833,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491925.4940922,
+        "sim_time": 340.0,
+        "gpu_temp_c": {
+          "0": 49.333333333333336
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1960.1820000000298
+        },
+        "tokens_generated": 434,
+        "energy_per_token_j": 4.516548387096843,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491935.5051854,
+        "sim_time": 350.0,
+        "gpu_temp_c": {
+          "0": 49.57142857142857
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1906.4879999998957
+        },
+        "tokens_generated": 416,
+        "energy_per_token_j": 4.582903846153595,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776491945.5185997,
+        "sim_time": 360.0,
+        "gpu_temp_c": {
+          "0": 49.111111111111114
+        },
+        "gpu_power_w": {
+          "0": 0.0
+        },
+        "gpu_energy_j": {
+          "0": 1835.3029999998398
+        },
+        "tokens_generated": 396,
+        "energy_per_token_j": 4.634603535353131,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      }
+    ]
+  }
+}

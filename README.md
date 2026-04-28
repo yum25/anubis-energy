@@ -7,8 +7,10 @@ serving schedulers for LLM inference on a CloudLab V100S node:
 
 - **Static scheduler** — picks configs from a precomputed Pareto lookup table;
   never re-measures at runtime.
-- **Runtime scheduler** — adapts frequency in real time using live temperature
-  and energy-per-token readings from Zeus.
+- **Runtime scheduler** — starts from the same static Pareto prior, then
+  continuously refines it with live EMA-smoothed observations. Detects when the
+  static prior is stale and explores neighboring configs to find a better
+  operating point. Exploration aggressiveness is controlled by `--exploration-mode`.
 
 ---
 
@@ -153,12 +155,22 @@ python experiment.py --mode sim --duration 360 --output results/sim.json
 # Print per-step observations while running
 python experiment.py --mode sim --duration 360 --verbose --output results/sim.json
 
-# Change the static scheduler's optimisation policy
+# Change the optimisation policy
 # Options: min_energy (default) | max_goodput | best_efficiency
 python experiment.py --mode sim --static-policy max_goodput --output results/sim_goodput.json
 
 # Run only one scheduler
 python experiment.py --mode sim --scheduler runtime --output results/sim_runtime_only.json
+
+# Control runtime scheduler exploration aggressiveness
+# conservative: only reacts to large (30%) deviations, long cooldowns
+# balanced: moderate thresholds (default)
+# aggressive: reacts to small (10%) deviations, explores broadly
+python experiment.py --mode sim --scheduler runtime --exploration-mode aggressive --output results/sim_aggressive.json
+
+# Simulate a warmer environment to stress the static prior (default already does this:
+# --sim-t-outside-c 35 vs --profile-t-outside-c 22)
+python experiment.py --mode sim --sim-t-outside-c 40 --output results/sim_hot.json
 ```
 
 **Simulated workload scenario** (360 s total, 36 steps at 10 s intervals):
@@ -239,6 +251,12 @@ curl -s http://localhost:8000/health
 > - *Slow first request* — normal; the KV cache is allocated on the first call.
 > - *Server not found after `&`* — startup takes 2–4 minutes for Llama-2-7B on
 >   first load; wait for the health check to return 200 before running experiments.
+>
+> **Troubleshooting Zeus / pynvml**
+>
+> - *`ZeusGPUFunctionNotFoundError: Function Not Found` (`nvmlDeviceGetTemperatureV`)* —
+>   the installed pynvml version is newer than the system NVML library supports.
+>   Downgrade: `pip install pynvml==11.5.0`
 
 ### Token counting
 
@@ -313,20 +331,23 @@ Load both JSON files and compare the `summary` fields in each. The full
 
 ## CLI reference — experiment.py
 
-| Flag                         | Default        | Description                                              |
-| ---------------------------- | -------------- | -------------------------------------------------------- |
-| `--mode`                     | `sim`          | `sim` = simulator, `real` = Zeus on hardware             |
-| `--scheduler`                | `both`         | `static`, `runtime`, or `both` (`both` is sim-only)      |
-| `--duration`                 | `360`          | Experiment length in seconds                             |
-| `--interval-s`               | `10`           | Observation interval in seconds                          |
-| `--static-policy`            | `min_energy`   | `min_energy`, `max_goodput`, `best_efficiency`           |
-| `--thermal-limit`            | `80.0`         | Static scheduler thermal ceiling (°C)                    |
-| `--runtime-initial-freq-idx` | `2`            | Runtime start freq index: 0=780 1=1000 2=1200 3=1377 MHz |
-| `--gpu-indices`              | `0`            | GPU device indices (e.g. `--gpu-indices 0 1`)            |
-| `--vllm-url`                 | `http://localhost:8000` | vLLM server base URL (real mode only)           |
-| `--seed`                     | `42`           | Simulator RNG seed (ignored in real mode)                |
-| `--output`                   | `results.json` | Path for the JSON results file                           |
-| `--verbose` / `-v`           | off            | Print per-step observations to stdout                    |
+| Flag                  | Default                  | Description                                                         |
+| --------------------- | ------------------------ | ------------------------------------------------------------------- |
+| `--mode`              | `sim`                    | `sim` = simulator, `real` = Zeus on hardware                        |
+| `--scheduler`         | `both`                   | `static`, `runtime`, or `both` (`both` is sim-only)                 |
+| `--gpu-model`         | `V100S`                  | GPU model for simulator physics and Pareto normalisation (`V100S`, `H100`, `B200`) |
+| `--duration`          | `360`                    | Experiment length in seconds                                        |
+| `--interval-s`        | `10`                     | Observation interval in seconds                                     |
+| `--static-policy`     | `min_energy`             | `min_energy`, `max_goodput`, `best_efficiency`                      |
+| `--thermal-limit`     | `80.0`                   | Thermal ceiling (°C) for both schedulers' thermal guard             |
+| `--exploration-mode`  | `balanced`               | Runtime scheduler exploration aggressiveness: `conservative`, `balanced`, `aggressive` |
+| `--sim-t-outside-c`   | `35.0`                   | Simulator ambient temperature at runtime (°C); raise to create prior mismatch |
+| `--profile-t-outside-c` | `22.0`                | Ambient temperature when the static profile was measured (°C)       |
+| `--gpu-indices`       | `0`                      | GPU device indices (e.g. `--gpu-indices 0 1`)                       |
+| `--vllm-url`          | `http://localhost:8000`  | vLLM server base URL (real mode only)                               |
+| `--seed`              | `42`                     | Simulator RNG seed (ignored in real mode)                           |
+| `--output`            | `results.json`           | Path for the JSON results file                                      |
+| `--verbose` / `-v`    | off                      | Print per-step observations to stdout                               |
 
 ---
 

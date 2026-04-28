@@ -73,7 +73,6 @@ PYTHON_BIN=$(command -v python3.11 || command -v python3.10 || command -v python
 PYTHON_VER=$("$PYTHON_BIN" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 
 if python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" 2>/dev/null; then
-  PYTHON_BIN=$(command -v python3)
   info "Python ${PYTHON_VER} already available at $PYTHON_BIN"
 else
   info "Python < 3.10 detected (${PYTHON_VER}). Installing Python 3.11 via deadsnakes PPA..."
@@ -104,15 +103,15 @@ pip install --upgrade pip wheel setuptools -q
 # PyTorch 2.3.0+cu118 is the newest torch that ships cu118 wheels and is
 # required by vLLM 0.4.3.  Must be installed before vLLM so vLLM's own
 # torch requirement is already satisfied and it won't pull a CPU-only build.
-info "Installing PyTorch 2.3.0 (CUDA 11.8)..."
+info "Installing PyTorch 2.3.0 (CUDA 12.1)..."
 pip install \
-  torch==2.3.0+cu118 \
-  torchvision==0.18.0+cu118 \
-  --index-url https://download.pytorch.org/whl/cu118 \
+  torch==2.3.0+cu121 \
+  torchvision==0.18.0+cu121 \
+  --index-url https://download.pytorch.org/whl/cu121 \
   -q
 
 # Quick sanity check
-python - <<'EOF'
+"$VENV/bin/python" - <<'EOF'
 import torch
 assert torch.cuda.is_available(), "CUDA not available after torch install"
 cc = torch.cuda.get_device_capability()
@@ -131,9 +130,9 @@ if [[ "$SKIP_VLLM" == false ]]; then
   info "Installing vLLM 0.4.3 (this may take a few minutes)..."
   # vLLM 0.4.3 is the last release with V100 (CC 7.0) support.
   # The prebuilt wheel targets sm_70+, so no source build is needed.
-  pip install vllm==0.4.3 -q
+  pip install vllm==0.4.3
 
-  python - <<'EOF'
+  "$VENV/bin/python" - <<'EOF'
 from vllm import LLM
 print("  vLLM import OK")
 EOF
@@ -193,7 +192,7 @@ fi
 
 # ── 10. Smoke test ────────────────────────────────────────────────────────────
 info "Running simulator smoke test..."
-python - <<'EOF'
+"$VENV/bin/python" - <<'EOF'
 import sys, os
 sys.path.insert(0, os.environ.get("REPO_ROOT", "."))
 from profilers.simulator import SimulatedGpuDataSource

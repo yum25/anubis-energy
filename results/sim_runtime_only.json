@@ -1,0 +1,1295 @@
+{
+  "meta": {
+    "mode": "sim",
+    "gpu": "V100S",
+    "scenario": [
+      [
+        0,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ],
+      [
+        60,
+        "event",
+        {
+          "event": "thermal_spike",
+          "delta_c": 10.0
+        }
+      ],
+      [
+        120,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "prefill"
+        }
+      ],
+      [
+        240,
+        "event",
+        {
+          "event": "load_spike",
+          "duration_s": 60.0,
+          "multiplier": 1.5
+        }
+      ],
+      [
+        300,
+        "workload",
+        {
+          "request_rate": 2.0,
+          "phase": "decode"
+        }
+      ]
+    ],
+    "duration_s": 360.0,
+    "interval_s": 10.0,
+    "seed": 42,
+    "timestamp": "2026-04-14T07:02:12.229343+00:00"
+  },
+  "runtime": {
+    "scheduler": "runtime",
+    "policy": "feedback",
+    "summary": {
+      "total_energy_j": 48807.979,
+      "total_tokens": 196290,
+      "mean_energy_per_token_j": 0.9625,
+      "mean_tokens_per_s": 545.25,
+      "mean_temp_c": 35.74,
+      "max_temp_c": 47.09,
+      "throttle_steps": 0,
+      "n_observations": 36
+    },
+    "decisions": [
+      {
+        "sim_time": 10.0,
+        "timestamp": 1776150132.234226,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 28.18,
+        "temp_ema": 28.18,
+        "ept_ema": 0.55,
+        "ept_baseline": null,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": true
+      },
+      {
+        "sim_time": 20.0,
+        "timestamp": 1776150132.2342541,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 31.33,
+        "temp_ema": 29.28,
+        "ept_ema": 0.55,
+        "ept_baseline": null,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 30.0,
+        "timestamp": 1776150132.234272,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 33.74,
+        "temp_ema": 30.84,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 40.0,
+        "timestamp": 1776150132.234284,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 35.61,
+        "temp_ema": 32.51,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 50.0,
+        "timestamp": 1776150132.2342908,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 37.27,
+        "temp_ema": 34.18,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 60.0,
+        "timestamp": 1776150132.2342982,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 38.1,
+        "temp_ema": 35.55,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 70.0,
+        "timestamp": 1776150132.234306,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 47.09,
+        "temp_ema": 39.59,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 80.0,
+        "timestamp": 1776150132.234314,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 45.83,
+        "temp_ema": 41.77,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 90.0,
+        "timestamp": 1776150132.2343209,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 45.51,
+        "temp_ema": 43.08,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 100.0,
+        "timestamp": 1776150132.234327,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 45.08,
+        "temp_ema": 43.78,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 110.0,
+        "timestamp": 1776150132.234333,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 44.82,
+        "temp_ema": 44.14,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 120.0,
+        "timestamp": 1776150132.234339,
+        "phase": "decode",
+        "freq_mhz": 1377,
+        "max_seqs": 32,
+        "avg_temp_c": 44.27,
+        "temp_ema": 44.19,
+        "ept_ema": 0.55,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "scale_up",
+        "config_changed": false
+      },
+      {
+        "sim_time": 130.0,
+        "timestamp": 1776150132.234346,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 44.2,
+        "temp_ema": 44.19,
+        "ept_ema": 0.715,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": true
+      },
+      {
+        "sim_time": 140.0,
+        "timestamp": 1776150132.234354,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 41.14,
+        "temp_ema": 43.12,
+        "ept_ema": 0.847,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 150.0,
+        "timestamp": 1776150132.23436,
+        "phase": "prefill",
+        "freq_mhz": 1200,
+        "max_seqs": 8,
+        "avg_temp_c": 39.01,
+        "temp_ema": 41.68,
+        "ept_ema": 0.9526,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 160.0,
+        "timestamp": 1776150132.234366,
+        "phase": "prefill",
+        "freq_mhz": 1000,
+        "max_seqs": 8,
+        "avg_temp_c": 37.38,
+        "temp_ema": 40.18,
+        "ept_ema": 1.03708,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": true
+      },
+      {
+        "sim_time": 170.0,
+        "timestamp": 1776150132.234373,
+        "phase": "prefill",
+        "freq_mhz": 1000,
+        "max_seqs": 8,
+        "avg_temp_c": 35.7,
+        "temp_ema": 38.61,
+        "ept_ema": 1.104664,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 180.0,
+        "timestamp": 1776150132.234379,
+        "phase": "prefill",
+        "freq_mhz": 1000,
+        "max_seqs": 8,
+        "avg_temp_c": 34.69,
+        "temp_ema": 37.24,
+        "ept_ema": 1.158731,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 190.0,
+        "timestamp": 1776150132.2343838,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 33.48,
+        "temp_ema": 35.92,
+        "ept_ema": 1.201985,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": true
+      },
+      {
+        "sim_time": 200.0,
+        "timestamp": 1776150132.234391,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 33.08,
+        "temp_ema": 34.93,
+        "ept_ema": 1.236588,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 210.0,
+        "timestamp": 1776150132.234399,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 32.76,
+        "temp_ema": 34.17,
+        "ept_ema": 1.26427,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "hold_cooldown",
+        "config_changed": false
+      },
+      {
+        "sim_time": 220.0,
+        "timestamp": 1776150132.234405,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 31.92,
+        "temp_ema": 33.38,
+        "ept_ema": 1.286416,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 230.0,
+        "timestamp": 1776150132.234411,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 31.42,
+        "temp_ema": 32.7,
+        "ept_ema": 1.304133,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 240.0,
+        "timestamp": 1776150132.2344162,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 31.22,
+        "temp_ema": 32.18,
+        "ept_ema": 1.318306,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 250.0,
+        "timestamp": 1776150132.234424,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 31.31,
+        "temp_ema": 31.87,
+        "ept_ema": 1.329645,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 260.0,
+        "timestamp": 1776150132.234431,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 30.94,
+        "temp_ema": 31.55,
+        "ept_ema": 1.338716,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 270.0,
+        "timestamp": 1776150132.2344372,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 30.88,
+        "temp_ema": 31.31,
+        "ept_ema": 1.345973,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 280.0,
+        "timestamp": 1776150132.2344441,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 30.76,
+        "temp_ema": 31.12,
+        "ept_ema": 1.351778,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 290.0,
+        "timestamp": 1776150132.2344499,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 30.58,
+        "temp_ema": 30.93,
+        "ept_ema": 1.356423,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 300.0,
+        "timestamp": 1776150132.234456,
+        "phase": "prefill",
+        "freq_mhz": 780,
+        "max_seqs": 8,
+        "avg_temp_c": 30.33,
+        "temp_ema": 30.72,
+        "ept_ema": 1.360138,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 310.0,
+        "timestamp": 1776150132.234463,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 30.46,
+        "temp_ema": 30.63,
+        "ept_ema": 1.19811,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": true
+      },
+      {
+        "sim_time": 320.0,
+        "timestamp": 1776150132.2344692,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 31.57,
+        "temp_ema": 30.96,
+        "ept_ema": 1.068488,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 330.0,
+        "timestamp": 1776150132.234475,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 33.14,
+        "temp_ema": 31.72,
+        "ept_ema": 0.964791,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 340.0,
+        "timestamp": 1776150132.2344809,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 33.92,
+        "temp_ema": 32.49,
+        "ept_ema": 0.881833,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 350.0,
+        "timestamp": 1776150132.234487,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 34.49,
+        "temp_ema": 33.19,
+        "ept_ema": 0.815466,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      },
+      {
+        "sim_time": 360.0,
+        "timestamp": 1776150132.234494,
+        "phase": "decode",
+        "freq_mhz": 780,
+        "max_seqs": 32,
+        "avg_temp_c": 35.53,
+        "temp_ema": 34.01,
+        "ept_ema": 0.762373,
+        "ept_baseline": 0.55,
+        "throttled": false,
+        "reason": "efficiency_decay",
+        "config_changed": false
+      }
+    ],
+    "observations": [
+      {
+        "timestamp": 1776150132.234226,
+        "sim_time": 10.0,
+        "gpu_temp_c": {
+          "0": 28.18
+        },
+        "gpu_power_w": {
+          "0": 95.8
+        },
+        "gpu_energy_j": {
+          "0": 957.862
+        },
+        "tokens_generated": 2684,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2342541,
+        "sim_time": 20.0,
+        "gpu_temp_c": {
+          "0": 31.33
+        },
+        "gpu_power_w": {
+          "0": 194.7
+        },
+        "gpu_energy_j": {
+          "0": 1947.142
+        },
+        "tokens_generated": 10999,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234272,
+        "sim_time": 30.0,
+        "gpu_temp_c": {
+          "0": 33.74
+        },
+        "gpu_power_w": {
+          "0": 194.3
+        },
+        "gpu_energy_j": {
+          "0": 1942.95
+        },
+        "tokens_generated": 11760,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234284,
+        "sim_time": 40.0,
+        "gpu_temp_c": {
+          "0": 35.61
+        },
+        "gpu_power_w": {
+          "0": 195.8
+        },
+        "gpu_energy_j": {
+          "0": 1957.939
+        },
+        "tokens_generated": 12581,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2342908,
+        "sim_time": 50.0,
+        "gpu_temp_c": {
+          "0": 37.27
+        },
+        "gpu_power_w": {
+          "0": 195.4
+        },
+        "gpu_energy_j": {
+          "0": 1954.285
+        },
+        "tokens_generated": 11451,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2342982,
+        "sim_time": 60.0,
+        "gpu_temp_c": {
+          "0": 38.1
+        },
+        "gpu_power_w": {
+          "0": 195.8
+        },
+        "gpu_energy_j": {
+          "0": 1958.36
+        },
+        "tokens_generated": 12669,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234306,
+        "sim_time": 70.0,
+        "gpu_temp_c": {
+          "0": 47.09
+        },
+        "gpu_power_w": {
+          "0": 194.8
+        },
+        "gpu_energy_j": {
+          "0": 1947.78
+        },
+        "tokens_generated": 12206,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234314,
+        "sim_time": 80.0,
+        "gpu_temp_c": {
+          "0": 45.83
+        },
+        "gpu_power_w": {
+          "0": 194.2
+        },
+        "gpu_energy_j": {
+          "0": 1941.602
+        },
+        "tokens_generated": 12181,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2343209,
+        "sim_time": 90.0,
+        "gpu_temp_c": {
+          "0": 45.51
+        },
+        "gpu_power_w": {
+          "0": 194.4
+        },
+        "gpu_energy_j": {
+          "0": 1943.751
+        },
+        "tokens_generated": 12113,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234327,
+        "sim_time": 100.0,
+        "gpu_temp_c": {
+          "0": 45.08
+        },
+        "gpu_power_w": {
+          "0": 197.4
+        },
+        "gpu_energy_j": {
+          "0": 1974.44
+        },
+        "tokens_generated": 11228,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234333,
+        "sim_time": 110.0,
+        "gpu_temp_c": {
+          "0": 44.82
+        },
+        "gpu_power_w": {
+          "0": 190.6
+        },
+        "gpu_energy_j": {
+          "0": 1905.534
+        },
+        "tokens_generated": 10332,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234339,
+        "sim_time": 120.0,
+        "gpu_temp_c": {
+          "0": 44.27
+        },
+        "gpu_power_w": {
+          "0": 192.3
+        },
+        "gpu_energy_j": {
+          "0": 1923.496
+        },
+        "tokens_generated": 12410,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234346,
+        "sim_time": 130.0,
+        "gpu_temp_c": {
+          "0": 44.2
+        },
+        "gpu_power_w": {
+          "0": 191.4
+        },
+        "gpu_energy_j": {
+          "0": 1914.398
+        },
+        "tokens_generated": 4647,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 1377,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234354,
+        "sim_time": 140.0,
+        "gpu_temp_c": {
+          "0": 41.14
+        },
+        "gpu_power_w": {
+          "0": 96.0
+        },
+        "gpu_energy_j": {
+          "0": 960.461
+        },
+        "tokens_generated": 997,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.23436,
+        "sim_time": 150.0,
+        "gpu_temp_c": {
+          "0": 39.01
+        },
+        "gpu_power_w": {
+          "0": 98.8
+        },
+        "gpu_energy_j": {
+          "0": 987.608
+        },
+        "tokens_generated": 1044,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234366,
+        "sim_time": 160.0,
+        "gpu_temp_c": {
+          "0": 37.38
+        },
+        "gpu_power_w": {
+          "0": 98.3
+        },
+        "gpu_energy_j": {
+          "0": 982.547
+        },
+        "tokens_generated": 1036,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1200,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234373,
+        "sim_time": 170.0,
+        "gpu_temp_c": {
+          "0": 35.7
+        },
+        "gpu_power_w": {
+          "0": 91.3
+        },
+        "gpu_energy_j": {
+          "0": 912.768
+        },
+        "tokens_generated": 870,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234379,
+        "sim_time": 180.0,
+        "gpu_temp_c": {
+          "0": 34.69
+        },
+        "gpu_power_w": {
+          "0": 92.7
+        },
+        "gpu_energy_j": {
+          "0": 926.786
+        },
+        "tokens_generated": 995,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2343838,
+        "sim_time": 190.0,
+        "gpu_temp_c": {
+          "0": 33.48
+        },
+        "gpu_power_w": {
+          "0": 90.1
+        },
+        "gpu_energy_j": {
+          "0": 901.323
+        },
+        "tokens_generated": 925,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 1000,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234391,
+        "sim_time": 200.0,
+        "gpu_temp_c": {
+          "0": 33.08
+        },
+        "gpu_power_w": {
+          "0": 91.6
+        },
+        "gpu_energy_j": {
+          "0": 916.255
+        },
+        "tokens_generated": 780,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234399,
+        "sim_time": 210.0,
+        "gpu_temp_c": {
+          "0": 32.76
+        },
+        "gpu_power_w": {
+          "0": 89.8
+        },
+        "gpu_energy_j": {
+          "0": 898.263
+        },
+        "tokens_generated": 695,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234405,
+        "sim_time": 220.0,
+        "gpu_temp_c": {
+          "0": 31.92
+        },
+        "gpu_power_w": {
+          "0": 93.0
+        },
+        "gpu_energy_j": {
+          "0": 929.671
+        },
+        "tokens_generated": 694,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234411,
+        "sim_time": 230.0,
+        "gpu_temp_c": {
+          "0": 31.42
+        },
+        "gpu_power_w": {
+          "0": 90.9
+        },
+        "gpu_energy_j": {
+          "0": 908.681
+        },
+        "tokens_generated": 736,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344162,
+        "sim_time": 240.0,
+        "gpu_temp_c": {
+          "0": 31.22
+        },
+        "gpu_power_w": {
+          "0": 91.9
+        },
+        "gpu_energy_j": {
+          "0": 918.507
+        },
+        "tokens_generated": 835,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234424,
+        "sim_time": 250.0,
+        "gpu_temp_c": {
+          "0": 31.31
+        },
+        "gpu_power_w": {
+          "0": 97.1
+        },
+        "gpu_energy_j": {
+          "0": 971.409
+        },
+        "tokens_generated": 1091,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234431,
+        "sim_time": 260.0,
+        "gpu_temp_c": {
+          "0": 30.94
+        },
+        "gpu_power_w": {
+          "0": 101.8
+        },
+        "gpu_energy_j": {
+          "0": 1018.259
+        },
+        "tokens_generated": 1091,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344372,
+        "sim_time": 270.0,
+        "gpu_temp_c": {
+          "0": 30.88
+        },
+        "gpu_power_w": {
+          "0": 101.2
+        },
+        "gpu_energy_j": {
+          "0": 1012.17
+        },
+        "tokens_generated": 1082,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344441,
+        "sim_time": 280.0,
+        "gpu_temp_c": {
+          "0": 30.76
+        },
+        "gpu_power_w": {
+          "0": 93.4
+        },
+        "gpu_energy_j": {
+          "0": 934.453
+        },
+        "tokens_generated": 1062,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344499,
+        "sim_time": 290.0,
+        "gpu_temp_c": {
+          "0": 30.58
+        },
+        "gpu_power_w": {
+          "0": 100.2
+        },
+        "gpu_energy_j": {
+          "0": 1002.164
+        },
+        "tokens_generated": 1190,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234456,
+        "sim_time": 300.0,
+        "gpu_temp_c": {
+          "0": 30.33
+        },
+        "gpu_power_w": {
+          "0": 90.9
+        },
+        "gpu_energy_j": {
+          "0": 908.925
+        },
+        "tokens_generated": 755,
+        "energy_per_token_j": 1.375,
+        "request_rate": 2.0,
+        "phase": "prefill",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234463,
+        "sim_time": 310.0,
+        "gpu_temp_c": {
+          "0": 30.46
+        },
+        "gpu_power_w": {
+          "0": 92.8
+        },
+        "gpu_energy_j": {
+          "0": 927.884
+        },
+        "tokens_generated": 2024,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 8,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344692,
+        "sim_time": 320.0,
+        "gpu_temp_c": {
+          "0": 31.57
+        },
+        "gpu_power_w": {
+          "0": 151.8
+        },
+        "gpu_energy_j": {
+          "0": 1518.236
+        },
+        "tokens_generated": 8139,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234475,
+        "sim_time": 330.0,
+        "gpu_temp_c": {
+          "0": 33.14
+        },
+        "gpu_power_w": {
+          "0": 149.0
+        },
+        "gpu_energy_j": {
+          "0": 1490.237
+        },
+        "tokens_generated": 8767,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.2344809,
+        "sim_time": 340.0,
+        "gpu_temp_c": {
+          "0": 33.92
+        },
+        "gpu_power_w": {
+          "0": 153.9
+        },
+        "gpu_energy_j": {
+          "0": 1538.926
+        },
+        "tokens_generated": 8033,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234487,
+        "sim_time": 350.0,
+        "gpu_temp_c": {
+          "0": 34.49
+        },
+        "gpu_power_w": {
+          "0": 145.7
+        },
+        "gpu_energy_j": {
+          "0": 1457.281
+        },
+        "tokens_generated": 7926,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      },
+      {
+        "timestamp": 1776150132.234494,
+        "sim_time": 360.0,
+        "gpu_temp_c": {
+          "0": 35.53
+        },
+        "gpu_power_w": {
+          "0": 151.6
+        },
+        "gpu_energy_j": {
+          "0": 1515.626
+        },
+        "tokens_generated": 8262,
+        "energy_per_token_j": 0.55,
+        "request_rate": 2.0,
+        "phase": "decode",
+        "max_num_seqs": 32,
+        "gpu_freq_mhz": 780,
+        "throttled": false
+      }
+    ]
+  }
+}
